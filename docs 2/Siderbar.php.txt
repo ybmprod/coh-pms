@@ -1,0 +1,184 @@
+<?php
+declare(strict_types=1);
+
+$user = current_user();
+$role = $user['role'] ?? '';
+
+$isAdministrator = $role === ROLE_ADMINISTRATOR;
+$isBookingOfficer = $role === ROLE_BOOKING_OFFICER;
+$isRevenueOfficer = $role === ROLE_REVENUE_OFFICER;
+$isCouncilManagement = $role === ROLE_COUNCIL_MANAGEMENT;
+$isCustomer = $role === ROLE_CUSTOMER;
+
+$canViewStaffArea = in_array(
+    $role,
+    [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT],
+    true
+);
+
+$venueExpanded = str_contains(current_page_attr('venue/index'), 'page');
+$pricingExpanded = str_contains(current_page_attr('pricingrule/index'), 'page');
+$bookingExpanded = str_contains(current_page_attr('booking/index'), 'page');
+$userExpanded = str_contains(current_page_attr('user/index'), 'page');
+?>
+<aside class="sidebar">
+    <nav aria-label="Main navigation">
+        <ul class="sidebar-nav">
+            <li>
+                <a href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>"<?php echo current_page_attr('dashboard/index'); ?>>
+                    <span class="nav-icon" aria-hidden="true">⌂</span>Dashboard
+                </a>
+            </li>
+
+            <?php if ($canViewStaffArea): ?>
+                <li>
+                    <a href="<?php echo e(BASE_URL . '/?r=dashboard/staff'); ?>"<?php echo current_page_attr('dashboard/staff'); ?>>
+                        <span class="nav-icon" aria-hidden="true">▦</span>Staff area
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($isAdministrator || $isBookingOfficer): ?>
+                <li class="accordion-item <?php echo $venueExpanded ? 'expanded' : ''; ?>">
+                    <button class="accordion-header" type="button" aria-expanded="<?php echo $venueExpanded ? 'true' : 'false'; ?>">
+                        <span><span class="nav-icon" aria-hidden="true">⌖</span>Venue management</span>
+                        <span class="accordion-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="accordion-content">
+                        <a href="<?php echo e(BASE_URL . '/?r=venue/index#add'); ?>" class="tab-link" data-target="add-venue">Add venue</a>
+                        <a href="<?php echo e(BASE_URL . '/?r=venue/index#list'); ?>" class="tab-link" data-target="list-venues">View venues</a>
+                    </div>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($isAdministrator): ?>
+                <li class="accordion-item <?php echo $pricingExpanded ? 'expanded' : ''; ?>">
+                    <button class="accordion-header" type="button" aria-expanded="<?php echo $pricingExpanded ? 'true' : 'false'; ?>">
+                        <span><span class="nav-icon" aria-hidden="true">◇</span>Pricing rules</span>
+                        <span class="accordion-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="accordion-content">
+                        <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#add'); ?>" class="tab-link" data-target="add-rule">Add rule</a>
+                        <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#list'); ?>" class="tab-link" data-target="list-rules">View rules</a>
+                    </div>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($canViewStaffArea): ?>
+                <li class="accordion-item <?php echo $bookingExpanded ? 'expanded' : ''; ?>">
+                    <button class="accordion-header" type="button" aria-expanded="<?php echo $bookingExpanded ? 'true' : 'false'; ?>">
+                        <span><span class="nav-icon" aria-hidden="true">▤</span>Bookings</span>
+                        <span class="accordion-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="accordion-content">
+                        <a href="<?php echo e(BASE_URL . '/?r=booking/index'); ?>" class="tab-link">All bookings</a>
+                    </div>
+                </li>
+                <li>
+                    <a href="<?php echo e(BASE_URL . '/?r=report/index'); ?>"<?php echo current_page_attr('report/index'); ?>>
+                        <span class="nav-icon" aria-hidden="true">▥</span>Reports
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if (in_array($role, [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER], true)): ?>
+                <li>
+                    <a href="<?php echo e(BASE_URL . '/?r=payment/index'); ?>"<?php echo current_page_attr('payment/index'); ?>>
+                        <span class="nav-icon" aria-hidden="true">＄</span>Payments
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($isCustomer): ?>
+                <li>
+                    <a href="<?php echo e(BASE_URL . '/?r=venue/customerList'); ?>"<?php echo current_page_attr('venue/customerList'); ?>>
+                        <span class="nav-icon" aria-hidden="true">⌖</span>Browse venues
+                    </a>
+                </li>
+                <li>
+                    <a href="<?php echo e(BASE_URL . '/?r=booking/customerList'); ?>"<?php echo current_page_attr('booking/customerList'); ?>>
+                        <span class="nav-icon" aria-hidden="true">▤</span>My bookings
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($isAdministrator): ?>
+                <li class="accordion-item <?php echo $userExpanded ? 'expanded' : ''; ?>">
+                    <button class="accordion-header" type="button" aria-expanded="<?php echo $userExpanded ? 'true' : 'false'; ?>">
+                        <span><span class="nav-icon" aria-hidden="true">♙</span>User management</span>
+                        <span class="accordion-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="accordion-content">
+                        <a href="<?php echo e(BASE_URL . '/?r=user/index#add'); ?>" class="tab-link" data-target="add-user">Add user</a>
+                        <a href="<?php echo e(BASE_URL . '/?r=user/index#list'); ?>" class="tab-link" data-target="list-users">View users</a>
+                    </div>
+                </li>
+            <?php endif; ?>
+
+            <?php if (!$user): ?>
+                <li><a href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>"<?php echo current_page_attr('auth/login'); ?>>Log in</a></li>
+                <li><a href="<?php echo e(BASE_URL . '/?r=auth/register'); ?>"<?php echo current_page_attr('auth/register'); ?>>Register</a></li>
+            <?php else: ?>
+                <li class="sidebar-logout">
+                    <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="button secondary">Log out</button>
+                    </form>
+                </li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const accordionItems = document.querySelectorAll('.accordion-item');
+
+    accordionItems.forEach(function (item) {
+        const button = item.querySelector('.accordion-header');
+        if (!button) return;
+
+        button.addEventListener('click', function () {
+            const shouldExpand = !item.classList.contains('expanded');
+
+            accordionItems.forEach(function (otherItem) {
+                otherItem.classList.remove('expanded');
+                const otherButton = otherItem.querySelector('.accordion-header');
+                if (otherButton) otherButton.setAttribute('aria-expanded', 'false');
+            });
+
+            if (shouldExpand) {
+                item.classList.add('expanded');
+                button.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+
+    function switchTab(hash) {
+        if (!hash) return;
+
+        const targetId = hash.replace('#', '');
+        const sections = document.querySelectorAll('.tab-section');
+        let matched = false;
+
+        sections.forEach(function (section) {
+            const isMatch = section.id === targetId || section.dataset.tab === targetId;
+            section.classList.toggle('active', isMatch);
+            if (isMatch) matched = true;
+        });
+
+        if (!matched && sections.length) {
+            sections.forEach(function (section, index) {
+                section.classList.toggle('active', index === 0);
+            });
+        }
+    }
+
+    if (document.querySelector('.tab-section')) {
+        switchTab(window.location.hash || '#list');
+        window.addEventListener('hashchange', function () {
+            switchTab(window.location.hash);
+        });
+    }
+});
+</script>

@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+
+$user = current_user();
+?>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>" aria-label="<?php echo e(APP_NAME); ?> dashboard">
+            <span class="brand-mark" aria-hidden="true">H</span>
+            <span class="brand-copy">
+                <span><?php echo e(APP_NAME); ?></span>
+                <span class="mini-role"><?php echo e($user['role'] ?? 'User'); ?></span>
+            </span>
+        </a>
+
+        <nav class="header-actions" aria-label="Account">
+            <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>">Dashboard</a>
+            <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>" class="inline-form">
+                <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
+                <button type="submit" class="button secondary">Log out</button>
+            </form>
+        </nav>
+    </div>
+</header>

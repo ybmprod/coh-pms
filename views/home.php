@@ -1,0 +1,79 @@
+<?php
+declare(strict_types=1);
+
+$flashMessage = $flash ?? null;
+$loggedIn = is_logged_in();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title><?php echo e(APP_NAME); ?></title>
+    <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
+</head>
+<body>
+    <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
+
+    <?php if ($flashMessage): ?>
+        <div class="flash flash-<?php echo e($flashMessage['type']); ?>" role="alert">
+            <?php echo e($flashMessage['message']); ?>
+        </div>
+    <?php endif; ?>
+
+    <main class="container home-main">
+        <section class="hero">
+            <span class="hero-eyebrow">City of Harare venue bookings</span>
+            <h1>Find the right venue for your next event.</h1>
+            <p>
+                Browse community halls, centres, stadiums and open spaces. Check availability,
+                see the charge before you book, and follow your request through to receipt.
+            </p>
+            <div class="button-row">
+                <?php if ($loggedIn): ?>
+                    <a href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>" class="button primary">
+                        Go to my dashboard
+                    </a>
+                <?php else: ?>
+                    <a href="<?php echo e(BASE_URL . '/?r=auth/register'); ?>" class="button primary">
+                        Create an account
+                    </a>
+                    <a href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>" class="button secondary">
+                        Log in
+                    </a>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <section class="home-steps" aria-labelledby="steps-title">
+            <div class="section-heading">
+                <span class="eyebrow">A simple process</span>
+                <h2 id="steps-title">Book with confidence</h2>
+            </div>
+
+            <div class="status-grid">
+                <article class="card step-card">
+                    <span class="step-number" aria-hidden="true">01</span>
+                    <h3>Choose a venue and time</h3>
+                    <p>Compare capacity and facilities, then select your date and event times.</p>
+                </article>
+
+                <article class="card step-card">
+                    <span class="step-number" aria-hidden="true">02</span>
+                    <h3>See the price upfront</h3>
+                    <p>Availability and approved pricing rules are checked before you submit.</p>
+                </article>
+
+                <article class="card step-card">
+                    <span class="step-number" aria-hidden="true">03</span>
+                    <h3>Pay and receive your receipt</h3>
+                    <p>After approval, submit payment details. Verified payments confirm your booking.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <?php include APP_VIEW_PATH . '/layouts/footer.php'; ?>
+</body>
+</html>

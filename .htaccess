@@ -1,0 +1,12 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_URI} ^/coh-pms/(config|app|database|views)/ [NC,OR]
+    RewriteRule .* - [F,L]
+
+    RewriteRule ^$ public/ [L]
+    RewriteCond %{REQUEST_URI} !^/coh-pms/public/ [NC]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

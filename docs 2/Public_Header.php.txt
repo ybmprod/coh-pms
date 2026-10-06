@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+?>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="<?php echo e(BASE_URL); ?>" aria-label="<?php echo e(APP_NAME); ?> home">
+            <span class="brand-mark" aria-hidden="true">H</span>
+            <span><?php echo e(APP_NAME); ?></span>
+        </a>
+
+        <nav class="header-actions" aria-label="Account">
+            <?php if (is_logged_in()): ?>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>">Dashboard</a>
+                <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
+                    <button type="submit" class="button secondary">Log out</button>
+                </form>
+            <?php else: ?>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>">Log in</a>
+                <a class="button primary" href="<?php echo e(BASE_URL . '/?r=auth/register'); ?>">Create account</a>
+            <?php endif; ?>
+        </nav>
+    </div>
+</header>

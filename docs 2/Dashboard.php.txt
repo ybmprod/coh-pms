@@ -1,0 +1,104 @@
+<?php
+declare(strict_types=1);
+
+$user = $user ?? current_user();
+$flash = get_flash();
+$dashboardCounts = $dashboardCounts ?? [];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title><?php echo e($pageTitle ?? 'Dashboard'); ?> | <?php echo e(APP_NAME); ?></title>
+    <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
+</head>
+<body>
+    <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
+
+    <?php if ($flash): ?>
+        <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert">
+            <?php echo e($flash['message']); ?>
+        </div>
+    <?php endif; ?>
+
+    <main class="container dashboard-layout">
+        <?php include APP_VIEW_PATH . '/layouts/sidebar.php'; ?>
+
+        <section class="dashboard-main" aria-label="Dashboard">
+            <div class="card welcome-box">
+                <div class="pill"><?php echo e($user['role'] ?? 'Customer'); ?></div>
+                <h1>Welcome, <?php echo e($user['full_name'] ?? 'User'); ?></h1>
+                <p>Here’s a summary of current activity.</p>
+            </div>
+
+            <div class="status-grid">
+                <?php if (array_key_exists('pending_bookings', $dashboardCounts)): ?>
+                    <article class="card">
+                        <h3>Pending bookings</h3>
+                        <p class="dashboard-count"><?php echo e((string) $dashboardCounts['pending_bookings']); ?></p>
+                        <a href="<?php echo e(BASE_URL . '/?r=booking/index'); ?>">View bookings</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (array_key_exists('pending_payments', $dashboardCounts)): ?>
+                    <article class="card">
+                        <h3>Payments awaiting verification</h3>
+                        <p class="dashboard-count"><?php echo e((string) $dashboardCounts['pending_payments']); ?></p>
+                        <a href="<?php echo e(BASE_URL . '/?r=payment/index'); ?>">View payments</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (array_key_exists('today_bookings', $dashboardCounts)): ?>
+                    <article class="card">
+                        <h3>Today’s bookings</h3>
+                        <p class="dashboard-count"><?php echo e((string) $dashboardCounts['today_bookings']); ?></p>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (array_key_exists('verified_revenue_this_month', $dashboardCounts)): ?>
+                    <article class="card">
+                        <h3>Verified revenue this month</h3>
+                        <p class="dashboard-count dashboard-count--money">
+                            <?php echo e(money_format_usd((float) $dashboardCounts['verified_revenue_this_month'])); ?>
+                        </p>
+                        <a href="<?php echo e(BASE_URL . '/?r=report/index'); ?>">View reports</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (($user['role'] ?? '') === ROLE_ADMINISTRATOR): ?>
+                    <article class="card">
+                        <h3>User management</h3>
+                        <p>Manage staff and customer accounts.</p>
+                        <a href="<?php echo e(BASE_URL . '/?r=user/index'); ?>">Manage user accounts</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (($user['role'] ?? '') === ROLE_COUNCIL_MANAGEMENT): ?>
+                    <article class="card">
+                        <h3>Reports</h3>
+                        <p>Review council venue activity and revenue.</p>
+                        <a href="<?php echo e(BASE_URL . '/?r=report/index'); ?>">Open reports</a>
+                    </article>
+                <?php endif; ?>
+
+                <?php if (($user['role'] ?? '') === ROLE_CUSTOMER): ?>
+                    <article class="card">
+                        <h3>Browse venues</h3>
+                        <p>Find a venue and check its availability.</p>
+                        <a href="<?php echo e(BASE_URL . '/?r=venue/customerList'); ?>">View available venues</a>
+                    </article>
+                    <article class="card">
+                        <h3>My bookings</h3>
+                        <p>Review reservations and payment status.</p>
+                        <a href="<?php echo e(BASE_URL . '/?r=booking/customerList'); ?>">View my bookings</a>
+                    </article>
+                <?php endif; ?>
+            </div>
+        </section>
+    </main>
+
+    <?php include APP_VIEW_PATH . '/layouts/footer.php'; ?>
+</body>
+</html>

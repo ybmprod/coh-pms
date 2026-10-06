@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+?>
+<footer class="site-footer">
+    <div class="container footer-inner">
+        <p>&copy; <?php echo date('Y'); ?> City of Harare</p>
+    </div>
+</footer>

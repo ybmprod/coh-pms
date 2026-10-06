@@ -1,0 +1,29 @@
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+
+# Composer / Dependencies
+/vendor/
+
+# Logs and Caches
+*.log
+cache/
+tmp/
+temp/
+
+# Python caches (if running helper scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# OS and Editor artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
