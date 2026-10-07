@@ -164,3 +164,5 @@ The `.htaccess` file in the project root blocks direct web access to `app`, `con
 - Venue image will not upload: the file must be a JPG, PNG or WebP of 2 MB or less, and `public/uploads/venues/` must be writable.
 - Login says the credentials are wrong after several attempts: wait five minutes, then try again.
 - Prices show no discount: pricing rules have dates. Check that the booking date falls inside a rule's start and end dates.
+
+  [![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/ybmprod/coh-pms?utm_source=readme&utm_medium=badge)
