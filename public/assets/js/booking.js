@@ -76,4 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
         field.addEventListener('input', checkAvailability);
         field.addEventListener('change', checkAvailability);
     });
+
+    // Auto-close time picker when minutes are fully selected (input becomes valid)
+    [start, end].forEach((field) => {
+        if (field) {
+            field.addEventListener('input', function() {
+                // If it has a complete value like 'HH:MM', blur to close the clock
+                if (this.value && this.value.length >= 5) {
+                    this.blur();
+                }
+            });
+        }
+    });
 });

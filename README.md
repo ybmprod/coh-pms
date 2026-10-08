@@ -1,168 +1,179 @@
 # City of Harare Property Management System (COH-PMS)
 
-COH-PMS is a web system for hiring City of Harare council venues such as community halls, community centres, stadiums and open spaces. It was built as a final-year project for the National Diploma in Information and Communication Technology.
+A secure, web-based venue hire and property management system for the City of Harare municipal council. Developed as a final-year National Diploma in Information and Communication Technology (ICT) project.
 
-Venue hire at the council has relied on paper registers and visits to the office. That leads to double bookings, prices that differ from one clerk to the next, slow approvals and reports that take days to put together. COH-PMS moves the whole process online, from the first enquiry to the printed receipt.
+---
 
-## Project objectives
+## 1. Project Overview
 
-1. Provide a secure web-based venue management system.
-2. Adjust venue prices automatically using the approved pricing rules.
-3. Produce management reports on facility usage and verified revenue.
+The **City of Harare Property Management System (COH-PMS)** automates and streamlines council venue hiring for community halls, community centres, stadia, and open spaces across Harare. It directly addresses the shortcomings of paper registers and manual office visits (double bookings, inconsistent pricing, slow processing, and weak reporting) through three core project objectives:
 
-## What the system does
+- **OBJ 1:** Implement a secure web-based venue management system.
+- **OBJ 2:** Automatically adjust property prices using approved municipal pricing rules.
+- **OBJ 3:** Produce comprehensive management reports on facility usage and verified revenue.
 
-Customers register, browse venues, pick a date and time, and see whether the slot is free and what it will cost before they submit. After a booking officer approves the request, the customer records a payment. A revenue officer checks the payment, and the booking is then confirmed and a receipt can be printed.
+### Technology Stack
+- **Backend:** Plain PHP 8.1+ (procedural helpers, object-oriented controllers, services, and models) using PDO.
+- **Database:** MySQL / MariaDB (`coh_pms`, charset `utf8mb4`).
+- **Frontend:** HTML5, CSS3, vanilla JavaScript (no jQuery, no React, no Bootstrap, no external CDNs; works completely offline).
+- **Environment:** Laragon (Apache, PHP 8.1+, MySQL, phpMyAdmin) on Windows.
+- **Architecture:** Lightweight MVC-Service pattern with single front controller (`public/index.php`) and query router (`?r=controller/action`).
 
-Council staff use the same system to manage venues, set pricing rules, review bookings, verify payments and run reports. Five roles are supported: Administrator, Booking Officer, Revenue Officer, Council Management and Customer.
+---
 
-Payments are recorded and verified by hand. There is no online payment gateway, and the system does not send email or SMS.
+## 2. Laragon Setup & Installation
 
-## Technology
+### Step 1: Place Project in Web Root
+Copy or clone the `coh-pms` directory into your Laragon `www` directory:
+```text
+C:\laragon\www\coh-pms
+```
+*(Or your custom Laragon drive location, e.g. `D:\...\Laragon\www\coh-pms`)*
 
-| Part | Choice |
-|---|---|
-| Backend | PHP 8.1 or later with PDO, written as controllers, services and models |
-| Database | MySQL or MariaDB, database name `coh_pms`, character set `utf8mb4` |
-| Frontend | HTML5, CSS3 and plain JavaScript |
-| Libraries | None. No jQuery, React, Bootstrap or external CDN, so it runs offline |
-| Server | Laragon on Windows (Apache, PHP, MySQL, phpMyAdmin) |
-| Structure | One front controller, `public/index.php`, with routes written as `?r=controller/action` |
+### Step 2: Start Laragon Services
+Launch Laragon and click **Start All** to ensure Apache and MySQL are running.
 
-## Installation on Laragon
+### Step 3: Create Database & Import Schema
+1. Open **phpMyAdmin** from Laragon (`http://localhost/phpmyadmin`) or MySQL CLI.
+2. Import the schema file first:
+   ```text
+   database/coh_pms.sql
+   ```
+   *(This creates the `coh_pms` database and the 5 relational tables: `users`, `venues`, `pricing_rules`, `bookings`, `payments`)*
+3. Import the seed data file once:
+   ```text
+   database/seed_data.sql
+   ```
+   *(Populates staff, test customers, municipal venues, 2026–2027 pricing rules, and representative bookings/payments)*
 
-1. Copy the `coh-pms` folder into Laragon's web root, for example `C:\laragon\www\coh-pms`.
-2. Start Laragon and click Start All so that Apache and MySQL are running.
-3. Open phpMyAdmin at `http://localhost/phpmyadmin` and import `database/coh_pms.sql`. This creates the `coh_pms` database and its five tables: `users`, `venues`, `pricing_rules`, `bookings` and `payments`.
-4. Import `database/seed_data.sql` once. It adds the test accounts, six venues, the 2026 and 2027 pricing rules, and a set of sample bookings and payments.
-5. Open `config/database.php` and check that the connection details match your MySQL setup. The defaults are host `127.0.0.1`, database `coh_pms`, user `root` and an empty password.
-6. Open the site at `http://coh-pms.test` if Laragon's automatic virtual hosts are on, or at `http://localhost/coh-pms/public` otherwise.
-
-Warning: `coh_pms.sql` starts with `DROP DATABASE IF EXISTS coh_pms`. Importing it a second time deletes every record, including bookings you have made while testing. Import it once, and only run it again when you want a clean start.
-
-### Fonts
-
-The interface uses the Poppins font, loaded from local files. Place `Poppins-Regular`, `Poppins-Medium`, `Poppins-SemiBold` and `Poppins-Bold` (`.woff2` or `.ttf`) in `public/assets/fonts/`. If the files are missing, the pages still work and the browser falls back to a standard system font.
-
-## Test accounts
-
-The seed file creates one account for each role. Passwords follow the system rule of at least 8 characters with a letter and a digit, and are stored only as bcrypt hashes.
-
-| Role | Email | Password |
-|---|---|---|
-| Administrator | admin@coh.co.zw | Admin@123 |
-| Booking Officer | booking.officer@coh.co.zw | Booking@123 |
-| Revenue Officer | revenue.officer@coh.co.zw | Revenue@123 |
-| Council Management | management@coh.co.zw | Management@123 |
-| Customer 1 | customer1@coh.co.zw | Customer@123 |
-| Customer 2 | customer2@coh.co.zw | Customer@123 |
-| Customer 3 | customer3@coh.co.zw | Customer@123 |
-
-What each role can do:
-
-- Administrator: manages staff accounts, venues and pricing rules, and can see every report.
-- Booking Officer: manages venues and reviews booking requests. Can see the booking and usage reports.
-- Revenue Officer: verifies or rejects payments and sees the payment and revenue reports.
-- Council Management: read-only access to all reports, including CSV export.
-- Customer: browses venues, books, pays, cancels where allowed and prints receipts.
-
-## How a booking moves through the system
-
-1. The customer chooses a venue, a date and a start and end time. The page checks availability and shows the price while the form is being filled in.
-2. The customer submits the request and the booking is saved as Pending.
-3. A Booking Officer or Administrator either rejects it, which ends the booking as Rejected, or approves it.
-4. Once a booking is Approved, the customer records a payment. The payment is marked Pending Verification, and the amount comes from the booking, not from the form.
-5. A Revenue Officer or Administrator checks the payment. If it is rejected, the booking stays Approved and the customer can pay again. If it is verified, the payment is marked Verified, a receipt number is issued and the booking becomes Confirmed.
-6. After the event date has passed, the booking can be marked Completed.
-
-A customer may cancel a booking while it is Pending, or while it is Approved and no payment has been made. Every booking has a reference in the form `COH-YYYYMMDD-XXXX`, and every receipt has a number in the form `RCT-YYYYMMDD-XXXX`.
-
-A slot counts as taken when another booking for the same venue and date is Pending, Approved or Confirmed and its times overlap. The availability check and the save happen in one database transaction, so two customers cannot book the same slot at the same moment. Bookings that finish exactly when another begins are allowed.
-
-## Pricing rules
-
-Every venue has a standard price per booking. Pricing rules then adjust it. A rule has a type (discount or surcharge), a percentage or fixed amount, the venue type it applies to, a date range, optional weekdays, an optional minimum number of hours, a priority and a status.
-
-For each booking the system finds the active rules that match, keeps only the one with the highest priority, and applies it. If two rules share a priority, the one with the lower rule number wins. Rules are never added together, and a fixed discount can never take the total below zero. Only the Administrator can create or change rules.
-
-Examples for a venue with a standard price of US$100:
-
-- Weekday Discount, 10 percent off from Monday to Thursday: US$90
-- Weekend Surcharge, 20 percent extra from Friday to Sunday: US$120
-- Long Booking, 5 percent off for bookings of 8 hours or more: US$95
-- No matching rule: US$100
-
-## Reports
-
-There are four reports, each with date, venue and status filters where they apply, and each can be exported as CSV.
-
-- Bookings: every booking with customer, venue, date, time, status and charge.
-- Facility usage: booked hours per venue compared with available hours, counting Approved, Confirmed and Completed bookings. Available hours are taken as 12 per day over the selected dates. Venues with no bookings still appear with zero.
-- Payments: every recorded payment and its status.
-- Verified revenue: the total of Verified payments only. Pending, rejected and unpaid bookings are not counted.
-
-## Running the automated tests
-
-The tests run from the command line and need no extra tools. Open Laragon's terminal in the project folder and run:
-
-```powershell
-php tests\logic_test.php
-php tests\suite_test.php
-php tests\f7_security_test.php
+### Step 4: Verify Database Configuration
+Check `config/database.php` to ensure the database connection parameters match your Laragon MySQL setup:
+```php
+$host = '127.0.0.1';
+$dbName = 'coh_pms';
+$dbUser = 'root';
+$dbPass = '';
+$charset = 'utf8mb4';
 ```
 
-`logic_test.php` has 8 checks of the pricing rules and the priority tie-break. `suite_test.php` has 20 checks covering passwords, routing, booking status changes, pricing, and the reference and receipt formats. `f7_security_test.php` has 12 checks on password rules, file upload inspection and the router's protections. All 40 should pass.
+### Step 5: Access the Web Application
+Open your browser and navigate to either:
+- Virtual Host (if Laragon auto-virtual hosts are active): `http://coh-pms.test`
+- Standard Localhost URL: `http://localhost/coh-pms/public`
 
-These tests do not use the database. The booking, payment and report workflows are checked by hand using the test cases in `docs/TESTING.md`.
+---
 
-## Security measures
+## 3. Seeded Test Accounts
 
-- Passwords are hashed with `password_hash()` and checked with `password_verify()`.
-- Five failed logins for the same email lock login for five minutes.
-- The session ID is renewed at login, and the account is re-checked on every request, so a deactivated user loses access straight away.
-- Every form has a CSRF token, every database query uses prepared statements, and all output is escaped.
-- Role checks run on the server for every protected action. A wrong role gets a 403 page.
-- Uploaded venue photos are checked by their real file type, renamed, and stored in a folder where PHP cannot run.
-- The router accepts only known controller and action names, and the front controller sets security headers.
+The seed file provides pre-configured accounts representing all system user roles. Passwords satisfy the system policy: minimum 8 characters with at least one letter and one digit. In accordance with security standards, the database stores only one-way bcrypt password hashes (`PASSWORD_DEFAULT`).
 
-## Folder structure
+| Role | Email Address | Plain Test Password | Description & Permissions |
+|---|---|---|---|
+| **Administrator** | `admin@coh.co.zw` | `Admin@123` | Full administrative control: manage staff accounts, venues, pricing rules, and view all reports. |
+| **Booking Officer** | `booking.officer@coh.co.zw` | `Booking@123` | Manages venues, reviews customer booking requests (Approve, Reject, Cancel, Complete), views usage reports. |
+| **Revenue Officer** | `revenue.officer@coh.co.zw` | `Revenue@123` | Verifies or rejects payments, issues official receipts, views payment & revenue reports. |
+| **Council Management** | `management@coh.co.zw` | `Management@123` | Read-only executive access to usage, booking, payment, and revenue reports with CSV export. |
+| **Customer 1** | `customer1@coh.co.zw` | `Customer@123` | Self-service portal: browses venues, books slots, submits payments, prints receipts. |
+| **Customer 2** | `customer2@coh.co.zw` | `Customer@123` | Additional test customer with historical booking records. |
+| **Customer 3** | `customer3@coh.co.zw` | `Customer@123` | Additional test customer with historical booking records. |
+
+---
+
+## 4. Folder Structure & Explanation
 
 ```text
 coh-pms/
-  app/
-    controllers/   Request handlers for each area of the system
-    core/          Router and the base controller with login and role checks
-    helpers/       Small functions for sessions, CSRF, messages, formatting, validation and uploads
-    models/        Database queries using PDO
-    services/      Business rules: booking, availability, pricing, payment and reports
-  config/          Settings, constants and the database connection
-  database/        coh_pms.sql (schema) and seed_data.sql (test data)
-  docs/            Specification, test plan, screenshot list and change log
-  public/          The only folder Apache serves
-    assets/        CSS, JavaScript and fonts
-    uploads/       Venue photographs
-    index.php      Front controller
-  tests/           Command-line test scripts
-  views/           Page templates for the public site, customers and staff
-  AGENTS.md        Instructions for AI coding tools used on the project
-  README.md        This file
+├── app/
+│   ├── controllers/      # Request handlers (Auth, User, Venue, Pricingrule, Booking, Payment, Report, Dashboard)
+│   ├── core/             # Router.php (clean query dispatcher) and Controller.php (base controller with auth/role guards)
+│   ├── helpers/          # Procedural utility functions (auth, csrf, flash, format, validation, upload)
+│   ├── models/           # Data access objects with prepared PDO queries (User, Venue, PricingRule, Booking, Payment, Report)
+│   └── services/         # Encapsulated business logic layer (BookingService, AvailabilityService, PricingService, PaymentService, ReportService)
+├── config/
+│   ├── config.php        # Session security, cookie parameters, base URL, timezone (Africa/Harare), app constants
+│   ├── constants.php     # Role definitions, booking status constants, and payment status constants
+│   └── database.php      # PDO database connection factory with ERRMODE_EXCEPTION and EMULATE_PREPARES=false
+├── database/
+│   ├── coh_pms.sql       # Complete relational database DDL schema (5 tables, indexes, constraints)
+│   └── seed_data.sql     # Seed data for users, venues, active rules, bookings, and payments
+├── docs/
+│   ├── COH-PMS_SPEC.md   # Master system specification
+│   ├── TESTING.md        # Comprehensive test matrix with automated and manual test cases
+│   ├── SCREENSHOTS.md    # Ordered list of UI pages for Chapter 5.4 dissertation inclusion
+│   └── CHANGES.md        # Detailed record of database, routing, and architectural modifications
+├── public/               # The single public document root exposed to Apache
+│   ├── assets/           # Client-side CSS, JavaScript, and images
+│   │   ├── css/style.css # Harare municipal palette styling, responsive layout, status badges, print media rules
+│   │   └── js/booking.js # Real-time AJAX availability and live pricing calculation
+│   ├── uploads/venues/   # Uploaded venue photographs (protected by .htaccess script execution restriction)
+│   ├── .htaccess         # URL rewriting and routing directives
+│   └── index.php         # Front controller with security headers, route whitelisting, and reflection method guard
+├── tests/
+│   ├── logic_test.php    # Objective 2 pricing rule engine verification (percentage, surcharge, off-peak, priority)
+│   ├── f7_security_test.php # Security hardening verification (password policy, MIME checks, router reflection guard)
+│   └── suite_test.php    # Comprehensive test suite covering business transitions, validation, and security rules
+├── views/
+│   ├── auth/             # Login and registration templates
+│   ├── customer/         # Customer venue browsing, booking request form, booking details, receipt views
+│   ├── errors/           # 403 Forbidden, 404 Not Found, and 500 Server Error error pages
+│   ├── layouts/          # Reusable layout components (public header, staff header, sidebar, footer)
+│   ├── staff/            # Role-specific dashboard, user management, venue CRUD, pricing rules, booking review, payment verification, reports
+│   └── home.php          # Welcome landing page
+├── .htaccess             # Denies direct web access to app/, config/, database/, docs/, tests/, views/
+├── AGENTS.md             # Developer instruction handbook
+└── README.md             # Setup guide, credentials, and architectural overview
 ```
 
-The `.htaccess` file in the project root blocks direct web access to `app`, `config`, `database`, `docs`, `tests` and `views`.
+---
 
-## Known limits
+## 5. Automated Test Suite Execution
 
-- Payments are entered and verified by staff. There is no payment gateway.
-- No email or SMS notifications are sent.
-- The login lock is stored in the session, so it slows down guessing but does not stop someone who clears their cookies.
-- A booking is marked Completed by staff after the event date, not automatically.
+COH-PMS includes automated command-line test suites that execute standalone without external testing frameworks:
 
-## Troubleshooting
+1. **Pricing Rule Logic Tests (Objective 2):**
+   ```powershell
+   php tests/logic_test.php
+   ```
+   *Verifies Weekday Discount (10% -> US$90), Weekend Surcharge (20% -> US$120), Off-Peak Discount (15% -> US$85), Long Booking (8+ hrs -> US$95), and priority tie-breaking rules.*
 
-- Blank page or database error: check that MySQL is running in Laragon and that the details in `config/database.php` are correct.
-- Page not found on every link: open the site through `public`, either `http://coh-pms.test` or `http://localhost/coh-pms/public`, and make sure Apache's rewrite module is enabled.
-- Venue image will not upload: the file must be a JPG, PNG or WebP of 2 MB or less, and `public/uploads/venues/` must be writable.
-- Login says the credentials are wrong after several attempts: wait five minutes, then try again.
-- Prices show no discount: pricing rules have dates. Check that the booking date falls inside a rule's start and end dates.
+2. **Security & Hardening Tests:**
+   ```powershell
+   php tests/f7_security_test.php
+   ```
+   *Verifies password complexity enforcement, PHP script upload rejection via MIME sniffing, router traversal protection, and reflection-based method blocking.*
 
-  [![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/ybmprod/coh-pms?utm_source=readme&utm_medium=badge)
+3. **Comprehensive Integrated Suite:**
+   ```powershell
+   php tests/suite_test.php
+   ```
+   *Runs all 20 integrated automated checks across security, routing, booking transition state machines, pricing calculations, and reference formatting.*
+
+---
+
+## 6. Official Booking & Payment Lifecycle
+
+```text
+Customer selects venue, date, times
+  │
+  ├─> Live AJAX checks availability & calculates rule-based charge
+  │
+  └─> Submit Booking  ==>  Status: Pending
+                             │
+                             ├─[Booking Officer/Admin Reviews]
+                             │   ├── Reject  ==>  Status: Rejected
+                             │   └── Approve ==>  Status: Approved
+                             │                      │
+                             │                      ├─[Customer Submits Payment]
+                             │                      │   ==>  Payment: Pending Verification
+                             │                      │
+                             │                      └─[Revenue Officer/Admin Verifies]
+                             │                          ├── Reject ==> Payment: Rejected (Booking stays Approved)
+                             │                          └── Verify ==> Payment: Verified, Receipt Generated
+                             │                                         Booking: Confirmed
+                             │                                         (Printable receipt available)
+                             │
+                             └─[Event date passes]
+                                 └── Mark Completed ==> Status: Completed
+```
+
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/ybmprod/coh-pms?utm_source=readme&utm_medium=badge)

@@ -15,7 +15,11 @@ $user = current_user();
             </span>
         </a>
 
-        <nav class="header-actions" aria-label="Account" style="align-items: center; display: flex; gap: 12px;">
+        <nav class="header-actions" aria-label="Account" style="align-items: center; display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="font-size: 0.85rem; color: var(--text); font-style: italic; font-weight: 500; letter-spacing: 0.02em; padding-right: 16px; border-right: 1px solid var(--border);">
+                "To Provide First Class Service Delivery and Promote Investment"
+            </div>
+            
             <?php if (is_logged_in()): ?>
                 <span style="font-weight: 500; color: var(--text); font-size: 0.9rem;"><?php echo e($user['role'] ?? 'User'); ?></span>
                 <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>" style="margin: 0;">
@@ -23,9 +27,7 @@ $user = current_user();
                     <button type="submit" class="button primary">Logout</button>
                 </form>
             <?php else: ?>
-                <div style="font-size: 0.85rem; color: var(--text); font-style: italic; font-weight: 500; letter-spacing: 0.02em;">
-                    "To Provide First Class Service Delivery and Promote Investment"
-                </div>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>">Log in</a>
             <?php endif; ?>
         </nav>
     </div>

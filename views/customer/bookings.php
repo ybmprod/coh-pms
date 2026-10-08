@@ -15,7 +15,7 @@ $venues = $venues ?? [];
     <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
 </head>
 <body>
-    <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
+    <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
 
     <?php if ($flash): ?>
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
@@ -61,8 +61,9 @@ $venues = $venues ?? [];
                             <label for="venue_id">Venue</label>
                             <select id="venue_id" name="venue_id" required>
                                 <option value="">Select a venue</option>
+                                <?php $preselectedVenueId = (int) ($_GET['venue_id'] ?? 0); ?>
                                 <?php foreach ($venues as $venue): ?>
-                                    <option value="<?php echo e((string) $venue['venue_id']); ?>"><?php echo e($venue['venue_name']); ?> - <?php echo e($venue['location']); ?></option>
+                                    <option value="<?php echo e((string) $venue['venue_id']); ?>"<?php echo (int) $venue['venue_id'] === $preselectedVenueId ? ' selected' : ''; ?>><?php echo e($venue['venue_name']); ?> - <?php echo e($venue['location']); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

@@ -16,7 +16,7 @@ $backRoute = ($user['role'] ?? '') === ROLE_CUSTOMER ? 'booking/customerList' : 
     <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
 </head>
 <body>
-    <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
+    <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
 
     <?php if ($flash): ?>
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
@@ -47,7 +47,12 @@ $backRoute = ($user['role'] ?? '') === ROLE_CUSTOMER ? 'booking/customerList' : 
                 <?php endif; ?>
             </div>
 
-            <p><a class="button secondary" href="<?php echo e(BASE_URL . '/?r=' . $backRoute); ?>">Back to bookings</a></p>
+            <div style="margin-top: 16px;">
+                <a class="button secondary" href="<?php echo e(BASE_URL . '/?r=' . $backRoute); ?>">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -3px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Back to bookings
+                </a>
+            </div>
         </section>
     </main>
 

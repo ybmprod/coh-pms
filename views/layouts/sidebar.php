@@ -113,7 +113,7 @@ $userExpanded = str_contains(current_page_attr('user/index'), 'page');
                 ?>
                 <li class="accordion-item <?php echo $myBookingsExpanded ? 'expanded' : ''; ?>">
                     <button class="accordion-header" type="button" aria-expanded="<?php echo $myBookingsExpanded ? 'true' : 'false'; ?>">
-                        <span><span class="nav-icon" aria-hidden="true">&#x1F4C5;</span>My bookings</span>
+                        <span><span class="nav-icon" aria-hidden="true">▤</span>My bookings</span>
                         <span class="accordion-chevron" aria-hidden="true"></span>
                     </button>
                     <div class="accordion-content">

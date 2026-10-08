@@ -109,9 +109,10 @@ class BookingService
             if ($venue['venue_status'] !== 'Available') {
                 throw new DomainException('This venue is not currently available.');
             }
-            if ($attendees > (int) $venue['capacity']) {
-                throw new DomainException('Number of attendees exceeds the venue capacity.');
-            }
+            // Removed restriction: Customers should be able to book venues despite exceeding estimated value
+            // if ($attendees > (int) $venue['capacity']) {
+            //     throw new DomainException('Number of attendees exceeds the venue capacity.');
+            // }
 
             $availability = (new AvailabilityService())->check($venueId, $date, $start, $end, 0, $pdo);
             if (!$availability['available']) {
