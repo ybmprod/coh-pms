@@ -8,9 +8,9 @@ A secure, web-based venue hire and property management system for the City of Ha
 
 The **City of Harare Property Management System (COH-PMS)** automates and streamlines council venue hiring for community halls, community centres, stadia, and open spaces across Harare. It directly addresses the shortcomings of paper registers and manual office visits (double bookings, inconsistent pricing, slow processing, and weak reporting) through three core project objectives:
 
-- **OBJ 1:** Implement a secure web-based venue management system.
-- **OBJ 2:** Automatically adjust property prices using approved municipal pricing rules.
-- **OBJ 3:** Produce comprehensive management reports on facility usage and verified revenue.
+- **OBJECTIVE 1:** Implement a secure web-based venue management system.
+- **OBJECTIVE 2:** Automatically adjust property prices using approved municipal pricing rules.
+- **OBJECTIVE 3:** Produce comprehensive management reports on facility usage and verified revenue.
 
 ### Technology Stack
 - **Backend:** Plain PHP 8.1+ (procedural helpers, object-oriented controllers, services, and models) using PDO.
