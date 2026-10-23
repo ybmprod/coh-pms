@@ -1,7 +1,7 @@
-# COH-PMS SPECIFICATION (docs/COH-PMS_SPEC.md)
+# COH-PMS SPECIFICATION (docs/Property Management System Specifications.md)
 
 City of Harare Property Management System, the master specification.
-`AGENTS.md` holds the permanent coding rules. This file holds **what the system must do**. If the two disagree, ask the student before changing anything.
+`Agents.md` holds the permanent coding rules. This file holds **what the system must do**. If the two disagree, ask the student before changing anything.
 
 Version: rebuilt after the source-code review (October 2026). It includes the decisions made during that review.
 
@@ -181,10 +181,14 @@ coh-pms/
 ├── views/         layouts/, auth/, customer/, staff/, errors/ (403, 404, 500), home.php
 ├── public/        index.php, .htaccess, assets/{css,js,images}, uploads/venues/ (+ .htaccess)
 ├── database/      coh_pms.sql, seed_data.sql
-├── tests/         logic_test.php
-├── docs/          COH-PMS_SPEC.md, TESTING.md, SCREENSHOTS.md, CHANGES.md
-├── AGENTS.md
-└── README.md
+├── python/        split_users.py, update_bookings.py, update_sidebar.py, update_sidebar_js.py
+├── tests/         suite_test.php, f7_security_test.php, logic_test.php
+├── docs/          Property Management System Specifications.md, System Testing.md, System Screenshots.md,
+│                  System Architecture And Schema Changes.md, Frontend Design Instructions.md,
+│                  User Account Creation Strategy.md
+├── docs 2/        Reference layout/view snapshots (*.txt)
+├── Agents.md
+└── Readme.md
 ```
 Local URL: `http://localhost/coh-pms/public`, or `http://coh-pms.test` with a Laragon virtual host. `BASE_URL` must be configurable.
 
@@ -208,13 +212,36 @@ Local URL: `http://localhost/coh-pms/public`, or `http://coh-pms.test` with a La
 
 ---
 
-## 9. INTERFACE
+## 9. INTERFACE & FRONTEND UI/UX DESIGN ENGINEERING
 
 - Colours: dark blue `#0B3C5D`, white, light grey `#F4F6F8`, one accent.
 - Two layouts: public/customer (top bar) and staff (top bar and sidebar). The sidebar shows only links the role may use. Login and Register links show only to guests; Logout is a POST form.
 - Status badges, flash messages, confirmation prompts for destructive actions, labelled forms, mobile-friendly (breakpoint 768px).
 - Printable booking confirmation and receipt page with a print stylesheet.
 - Plain, simple wording in all messages.
+
+### Frontend UI/UX Design Engineering Instructions
+Provide elite, production-grade frontend UI/UX implementations for modern websites. Ensure all code outputs strictly diverge from generic, template-like "AI aesthetics" by prioritizing intentional typography, modern color geometry, and robust interaction states.
+
+#### 9.1 Universal Layout & Composition
+- **Asymmetry & Grid Systems:** Use CSS Grid and Flexbox dynamically. Break out of rigid, repetitive card layouts. Utilize proportional, content-driven spacing instead of arbitrary hardcoded widths.
+- **Visual Anchors:** Ensure a clear typographical hierarchy. Emphasize section entries with distinctive header treatments or bold font sizing.
+- **The Overuse Ban:** Avoid generic full-bleed gradients, neon glowing card borders, and center-aligned paragraphs for core content blocks.
+
+#### 9.2 Modern Color Engineering & Design Tokens
+- **OKLCH Color Space:** Implement design systems using modern OKLCH colors for uniform perceptual brightness across themes.
+- **Intentional Palettes:** Default to an editorial, minimal palette (e.g., deep charcoal, soft off-whites, neutral slate) paired with exactly one distinct accent color used sparingly for active elements or branding.
+- **Contrast Compliance:** Strictly adhere to WCAG 2.2 AAA text-to-background contrast requirements. Never use light grey text on white backgrounds or deep blue on black.
+
+#### 9.3 Advanced UI Elements & Dynamic States
+- **Top-Layer Animations:** When implementing modals, drawers, or slide-outs, use modern CSS properties (`@starting-style`, `transition-behavior: allow-discrete`, and `overlay`) to ensure seamless transition tracking when elements enter and leave the DOM.
+- **Component Libraries:** Prefer generating structural mockups utilizing standardized UI systems (like Tailwind CSS tokens, `shadcn/ui` components, or Radix primitives).
+- **State Coverage:** Every interactive component must natively define styles for six core states: `:hover`, `:focus-visible`, `:active`, `[disabled]`, loading skeleton placeholders, and error-handling conditions.
+
+#### 9.4 Accessibility (a11y) & Performance Execution
+- **Semantic HTML:** Use structural landmarks natively (`<main>`, `<nav>`, `<aside>`, `<header>`, `<footer>`). Never stack nested `<div>` tags if semantic options exist.
+- **Keyboard Operability:** Ensure all custom interactive components can be navigated via keyboard focus logic with visible element boundaries (`outline: 2px solid var(--accent)`).
+- **Responsive Layouts:** Establish fluid-type systems and media queries bounded by clean, standardized logical breakpoints (`sm`, `md`, `lg`, `xl`). Prevent component truncation or awkward vertical text breaks on standard screens.
 
 ---
 
@@ -258,7 +285,7 @@ F1 services layer. F2 access control and sessions. F3 booking and availability. 
 
 ## 12. SEED DATA
 
-- Accounts: `admin@coh.co.zw` (Administrator), `booking.officer@coh.co.zw`, `revenue.officer@coh.co.zw`, `management@coh.co.zw` (Council Management), `customer1@coh.co.zw`, `customer2@coh.co.zw`, `customer3@coh.co.zw`. Test passwords are listed in `README.md`.
+- Accounts: `admin@coh.co.zw` (Administrator), `booking.officer@coh.co.zw`, `revenue.officer@coh.co.zw`, `management@coh.co.zw` (Council Management), `customer1@coh.co.zw`, `customer2@coh.co.zw`, `customer3@coh.co.zw`. Test passwords are listed in `Readme.md`.
 - 6 venues of different types (Harare locations) and 5 pricing rules from Section 6.2. Pricing rule dates must cover 2026 and 2027.
 - About 12 bookings and 8 payments covering every status.
 

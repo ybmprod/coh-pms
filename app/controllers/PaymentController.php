@@ -6,7 +6,7 @@ class PaymentController extends Controller
 {
     public function index(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER], 'staff')) {
             return;
         }
 
@@ -29,21 +29,21 @@ class PaymentController extends Controller
 
     public function submit(): void
     {
-        if ($this->denyIfNotRole([ROLE_CUSTOMER])) {
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
             return;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect(BASE_URL . '/?r=booking/customerList');
+            $this->redirect(BASE_URL . '/?r=booking/customerList#history');
         }
 
         if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
             error_log('CSRF validation failed for payment/submit.');
             set_flash('error', 'Your session has expired. Please try again.');
-            $this->redirect(BASE_URL . '/?r=booking/customerList');
+            $this->redirect(BASE_URL . '/?r=booking/customerList#history');
         }
 
-        $user = current_user();
+        $user = current_customer_user();
         try {
             (new PaymentService())->submit(
                 (int) ($_POST['booking_id'] ?? 0),
@@ -52,16 +52,16 @@ class PaymentController extends Controller
             );
         } catch (Throwable $e) {
             set_flash('error', $e->getMessage());
-            $this->redirect(BASE_URL . '/?r=booking/customerList');
+            $this->redirect(BASE_URL . '/?r=booking/customerList#history');
         }
 
         set_flash('success', 'Payment submitted for verification.');
-        $this->redirect(BASE_URL . '/?r=booking/customerList');
+        $this->redirect(BASE_URL . '/?r=booking/customerList#history');
     }
 
     public function verify(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_REVENUE_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_REVENUE_OFFICER], 'staff')) {
             return;
         }
 
@@ -87,7 +87,7 @@ class PaymentController extends Controller
 
         try {
             $paymentService = new PaymentService();
-            $actor = current_user();
+            $actor = current_staff_user();
             if ($status === PAYMENT_STATUS_VERIFIED) {
                 $paymentService->verify($paymentId, (int) $actor['id'], (string) $actor['role']);
             } else {
@@ -103,20 +103,23 @@ class PaymentController extends Controller
 
     public function receipt(): void
     {
-        if (!$this->requireAuth()) {
-            $this->redirect(BASE_URL . '/?r=auth/login');
+        $portalScope = is_staff_portal_request() ? 'staff' : 'customer';
+        if ($portalScope === 'staff') {
+            if ($this->denyIfNotRole([
+                ROLE_ADMINISTRATOR,
+                ROLE_BOOKING_OFFICER,
+                ROLE_REVENUE_OFFICER,
+                ROLE_COUNCIL_MANAGEMENT,
+            ], 'staff')) {
+                return;
+            }
+        } else {
+            if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
+                return;
+            }
         }
 
-        $user = current_user();
-        if ($user['role'] !== ROLE_CUSTOMER && $this->denyIfNotRole([
-            ROLE_ADMINISTRATOR,
-            ROLE_BOOKING_OFFICER,
-            ROLE_REVENUE_OFFICER,
-            ROLE_COUNCIL_MANAGEMENT,
-        ])) {
-            return;
-        }
-
+        $user = current_user($portalScope);
         $bookingId = (int) ($_GET['booking_id'] ?? 0);
         $receipt = Payment::getReceiptByBookingId($bookingId);
         if (!$receipt || $receipt['payment_status'] !== PAYMENT_STATUS_VERIFIED || empty($receipt['receipt_number'])) {
@@ -125,7 +128,7 @@ class PaymentController extends Controller
             return;
         }
 
-        if ($user['role'] === ROLE_CUSTOMER && (int) $receipt['customer_id'] !== (int) $user['id']) {
+        if ($portalScope === 'customer' && (int) $receipt['customer_id'] !== (int) $user['id']) {
             http_response_code(403);
             $this->render('errors/403', ['pageTitle' => 'Forbidden']);
             return;
@@ -133,6 +136,7 @@ class PaymentController extends Controller
 
         $this->render('customer/receipt', [
             'pageTitle' => 'Receipt ' . $receipt['receipt_number'],
+            'portalScope' => $portalScope,
             'receipt' => $receipt,
         ]);
     }

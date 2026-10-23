@@ -169,21 +169,32 @@ coh-pms/
 │   └── core/                 Router.php, Controller.php (base: render view, redirect, require role)
 ├── views/
 │   ├── layouts/              public_header, staff_header, sidebar, footer
-│   ├── auth/                 login, register
-│   ├── customer/             dashboard, venues, venue_details, booking_form, my_bookings, booking_details, payment_form, receipt
-│   ├── staff/                dashboard variants per role, venues (list/form), bookings (list/review), payments (list/verify),
-│   │                         users (list/form), pricing_rules (list/form), reports (index + 4 report views)
-│   ├── home.php
-│   └── errors/               403, 404
+│   ├── auth/                 login, register, staff_login, activate
+│   ├── customer/             venues, venue_details, bookings, booking_details, receipt
+│   ├── staff/                dashboard, venues, bookings, payments, users, pricing_rules, reports
+│   ├── home.php, staff_home.php
+│   └── errors/               403, 404, 500
 ├── public/                   (the only folder exposed to the web)
 │   ├── index.php             (front controller)
 │   ├── .htaccess
-│   ├── assets/css/style.css, assets/js/{main,booking,reports}.js, assets/images/
+│   ├── assets/css/style.css, assets/js/booking.js, assets/fonts/, assets/images/
 │   └── uploads/venues/
 ├── database/                 coh_pms.sql, seed_data.sql
-├── .htaccess                 (deny direct access to app/, config/, database/, views/)
-└── README.md
+├── docs/                     Property Management System Specifications.md, System Architecture And Schema Changes.md,
+│                             System Testing.md, System Screenshots.md, Frontend Design Instructions.md,
+│                             User Account Creation Strategy.md
+├── docs 2/                   Reference layout/view snapshots (*.txt)
+├── python/                   Python utility/migration scripts (split_users.py, update_bookings.py,
+│                             update_sidebar.py, update_sidebar_js.py)
+├── tests/                    suite_test.php, f7_security_test.php, logic_test.php
+├── .htaccess                 (deny direct access to app/, config/, database/, views/, docs/, python/, tests/)
+├── Agents.md
+└── Readme.md
 ```
+> **File Naming & Organization Rules:**
+> - **Markdown files (`.md`):** Always use **Title Case With Spaces** (e.g., `Agents.md`, `Readme.md`, `docs/Property Management System Specifications.md`, `docs/System Testing.md`, `docs/System Screenshots.md`, `docs/System Architecture And Schema Changes.md`, `docs/Frontend Design Instructions.md`, `docs/User Account Creation Strategy.md`). Never use `ALL_CAPS_SNAKE_CASE.md`.
+> - **Python files (`.py`):** Store all Python helper/utility scripts inside `coh-pms/python/` using `snake_case.py` filenames.
+
 Local URL: `http://coh-pms.test` (Laragon auto virtual host pointing at `/public`) or `http://localhost/coh-pms/public`. Make `BASE_URL` configurable so both work.
 
 ---
@@ -203,7 +214,26 @@ Local URL: `http://coh-pms.test` (Laragon auto virtual host pointing at `/public
 11. Use POST for all actions that change data (approve, reject, delete, verify). Never use GET for these.
 12. Prevent deleting a venue or user that has bookings (deactivate instead). Show a clear message.
 
-**UI:** clean, responsive, City of Harare style (dark blue `#0B3C5D`, white, light grey `#F4F6F8`, one accent colour). Separate public/customer layout and staff layout (top bar + sidebar). Coloured status badges, flash messages (success/error), confirmation prompts for approve/reject/delete, mobile-friendly with CSS media queries. Include `title`, labels, and accessible form fields.
+**UI & Frontend UI/UX Design Engineering:**
+clean, responsive, City of Harare style (dark blue `#0B3C5D`, white, light grey `#F4F6F8`, one accent colour). Separate public/customer layout and staff layout (top bar + sidebar). Coloured status badges, flash messages (success/error), confirmation prompts for approve/reject/delete, mobile-friendly with CSS media queries. Include `title`, labels, and accessible form fields.
+
+Provide elite, production-grade frontend UI/UX implementations for modern websites. Ensure all code outputs strictly diverge from generic, template-like "AI aesthetics" by prioritizing intentional typography, modern color geometry, and robust interaction states:
+1. **Universal Layout & Composition:**
+   - **Asymmetry & Grid Systems:** Use CSS Grid and Flexbox dynamically. Break out of rigid, repetitive card layouts. Utilize proportional, content-driven spacing instead of arbitrary hardcoded widths.
+   - **Visual Anchors:** Ensure a clear typographical hierarchy. Emphasize section entries with distinctive header treatments or bold font sizing.
+   - **The Overuse Ban:** Avoid generic full-bleed gradients, neon glowing card borders, and center-aligned paragraphs for core content blocks.
+2. **Modern Color Engineering & Design Tokens:**
+   - **OKLCH Color Space:** Implement design systems using modern OKLCH colors for uniform perceptual brightness across themes.
+   - **Intentional Palettes:** Default to an editorial, minimal palette (deep charcoal, soft off-whites, neutral slate) paired with exactly one distinct accent color used sparingly for active elements or branding.
+   - **Contrast Compliance:** Strictly adhere to WCAG 2.2 AAA text-to-background contrast requirements. Never use light grey text on white backgrounds or deep blue on black.
+3. **Advanced UI Elements & Dynamic States:**
+   - **Top-Layer Animations:** When implementing modals, drawers, or slide-outs, use modern CSS properties (`@starting-style`, `transition-behavior: allow-discrete`, and `overlay`) to ensure seamless transition tracking when elements enter and leave the DOM.
+   - **Component Libraries / Standardized Tokens:** Utilize standardized UI design tokens and primitives.
+   - **State Coverage:** Every interactive component must natively define styles for six core states: `:hover`, `:focus-visible`, `:active`, `[disabled]`, loading skeleton placeholders, and error-handling conditions.
+4. **Accessibility (a11y) & Performance Execution:**
+   - **Semantic HTML:** Use structural landmarks natively (`<main>`, `<nav>`, `<aside>`, `<header>`, `<footer>`). Never stack nested `<div>` tags if semantic options exist.
+   - **Keyboard Operability:** Ensure all custom interactive components can be navigated via keyboard focus logic with visible element boundaries (`outline: 2px solid var(--accent)`).
+   - **Responsive Layouts:** Establish fluid-type systems and media queries bounded by clean, standardized logical breakpoints (`sm`, `md`, `lg`, `xl`). Prevent component truncation or awkward vertical text breaks on standard screens.
 
 **Code quality:** meaningful names; short comments explaining the business rule at the top of each service method; no logic inside views other than loops and display; each controller method does: check role -> validate -> call service -> redirect/render.
 
@@ -236,8 +266,8 @@ Local URL: `http://coh-pms.test` (Laragon auto virtual host pointing at `/public
 
 1. Complete project in the exact folder structure above.
 2. `database/coh_pms.sql` and `database/seed_data.sql`.
-3. `README.md`: Laragon setup (copy folder to `C:\laragon\www\`, create DB, import SQL, edit `config/database.php`, open the URL), default accounts, how to run the test cases, and a short folder-by-folder explanation.
-4. A short `TESTING.md` containing the test-case table.
-5. A `SCREENSHOTS.md` listing every page to capture for Chapter 5.4 in this order: Home, Register/Login, Customer venue and booking pages, Booking status/confirmation/receipt, Booking Officer dashboard, Revenue Officer payment verification, Administrator venue and pricing rule pages, Management reports dashboard.
+3. `Readme.md`: Laragon setup (copy folder to `C:\laragon\www\`, create DB, import SQL, edit `config/database.php`, open the URL), default accounts, how to run the test cases, and a short folder-by-folder explanation.
+4. A short `docs/System Testing.md` containing the test-case table.
+5. A `docs/System Screenshots.md` listing every page to capture for Chapter 5.4 in this order: Home, Register/Login, Customer venue and booking pages, Booking status/confirmation/receipt, Booking Officer dashboard, Revenue Officer payment verification, Administrator venue and pricing rule pages, Management reports dashboard.
 
 **Begin now with Phase 1 only.** Before writing code, repeat back in 5 lines what you will build in Phase 1 and ask me any question you truly need answered. Otherwise start.

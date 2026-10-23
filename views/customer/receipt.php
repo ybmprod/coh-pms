@@ -1,10 +1,12 @@
 <?php
 declare(strict_types=1);
 $receipt = $receipt ?? [];
-$user = current_user();
+$isStaffPortal = ($portalScope ?? '') === 'staff' || (($portalScope ?? '') !== 'customer' && is_staff_portal_request());
 $adjustmentValue = (float) $receipt['adjustment_amount'];
 $adjustmentLabel = $adjustmentValue < 0 ? 'Discount' : ($adjustmentValue > 0 ? 'Surcharge' : 'Adjustment');
-$backRoute = 'booking/details&id=' . (int) $receipt['booking_id'];
+$detailsRoute = 'r=booking/details&id=' . (int) $receipt['booking_id'] . ($isStaffPortal ? '&portal=staff' : '');
+$listRoute = $isStaffPortal ? 'r=payment/index' : 'r=booking/customerList#history';
+$listLabel = $isStaffPortal ? 'Back to payments' : 'My bookings';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,12 +18,19 @@ $backRoute = 'booking/details&id=' . (int) $receipt['booking_id'];
     <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
 </head>
 <body>
-    <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
+    <?php if ($isStaffPortal): ?>
+        <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
+    <?php else: ?>
+        <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
+    <?php endif; ?>
 
-    <main class="container narrow">
-        <section class="card receipt-sheet">
-            <h1>Payment receipt</h1>
-            <p class="receipt-number">Receipt <?php echo e($receipt['receipt_number']); ?></p>
+    <main id="main-content" class="container narrow">
+        <article class="card receipt-sheet" aria-labelledby="receipt-heading">
+            <header class="form-header">
+                <span class="eyebrow">City of Harare &bull; Official Confirmation</span>
+                <h1 id="receipt-heading">Payment receipt</h1>
+                <p class="receipt-number">Receipt <?php echo e($receipt['receipt_number']); ?></p>
+            </header>
 
             <dl class="details-list">
                 <div><dt>Booking reference</dt><dd><?php echo e($receipt['booking_reference']); ?></dd></div>
@@ -43,10 +52,20 @@ $backRoute = 'booking/details&id=' . (int) $receipt['booking_id'];
             </dl>
 
             <div class="button-row no-print">
-                <button type="button" class="button primary" onclick="window.print()">Print receipt</button>
-                <a class="button secondary" href="<?php echo e(BASE_URL . '/?' . $backRoute); ?>">Booking details</a>
+                <button type="button" class="button primary" onclick="window.print()">
+                    <i class="fi fi-sr-print" aria-hidden="true"></i>
+                    <span>Print receipt</span>
+                </button>
+                <a class="button secondary" href="<?php echo e(BASE_URL . '/?' . $detailsRoute); ?>">
+                    <i class="fi fi-sr-document" aria-hidden="true"></i>
+                    <span>Booking details</span>
+                </a>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?' . $listRoute); ?>">
+                    <i class="fi fi-sr-arrow-left" aria-hidden="true"></i>
+                    <span><?php echo e($listLabel); ?></span>
+                </a>
             </div>
-        </section>
+        </article>
     </main>
 
     <?php include APP_VIEW_PATH . '/layouts/footer.php'; ?>

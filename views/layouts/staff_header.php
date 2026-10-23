@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
-$user = current_user();
+$staffUser = current_staff_user();
 ?>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <header class="site-header">
     <div class="header-inner">
         <a class="brand" href="<?php echo e(BASE_URL . '/?r=home/staff'); ?>" aria-label="City of Harare Property Management System Staff Portal">
@@ -10,24 +11,37 @@ $user = current_user();
                 <img src="<?php echo e(BASE_URL); ?>/assets/images/coh-pms-logo.png" alt="COH Logo">
             </span>
             <span class="brand-copy">
-                <span style="display: block; font-weight: 500;">City of Harare Property Management System</span>
-                <span class="mini-role" style="display: block; font-size: 0.8rem; margin-top: 2px;">(COH-PMS)</span>
+                <span class="brand-title">City of Harare Property Management System</span>
+                <span class="mini-role">Council Administration &amp; Operations (COH-PMS)</span>
             </span>
         </a>
 
-        <nav class="header-actions" aria-label="Account" style="align-items: center; display: flex; gap: 16px; flex-wrap: wrap;">
-            <div style="font-size: 0.85rem; color: var(--text); font-style: italic; font-weight: 500; letter-spacing: 0.02em; padding-right: 16px; border-right: 1px solid var(--border);">
-                "To Provide First Class Service Delivery and Promote Investment"
-            </div>
-            
-            <?php if (is_logged_in()): ?>
-                <span style="font-weight: 500; color: var(--text); font-size: 0.9rem;"><?php echo e($user['role'] ?? 'User'); ?></span>
-                <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>" style="margin: 0;">
+        <nav class="header-actions" aria-label="Council staff account">
+            <p class="header-motto">
+                &ldquo;To Provide First Class Service Delivery and Promote Investment&rdquo;
+            </p>
+
+            <?php if ($staffUser !== null): ?>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>">
+                    <i class="fi fi-sr-apps" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
+                <span class="header-user-badge">
+                    <i class="fi fi-sr-shield-check" aria-hidden="true" style="margin-right: 6px;"></i><?php echo e($staffUser['role'] ?? 'Staff'); ?>
+                </span>
+                <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/logout'); ?>" class="inline-form">
                     <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
-                    <button type="submit" class="button primary">Logout</button>
+                    <input type="hidden" name="portal" value="staff">
+                    <button type="submit" class="button primary">
+                        <i class="fi fi-sr-sign-out-alt" aria-hidden="true"></i>
+                        <span>Logout</span>
+                    </button>
                 </form>
             <?php else: ?>
-                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>">Log in</a>
+                <a class="button ghost" href="<?php echo e(BASE_URL . '/?r=auth/staffLogin'); ?>">
+                    <i class="fi fi-sr-sign-in-alt" aria-hidden="true"></i>
+                    <span>Staff Login</span>
+                </a>
             <?php endif; ?>
         </nav>
     </div>

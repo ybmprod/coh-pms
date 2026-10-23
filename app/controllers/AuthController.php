@@ -6,27 +6,27 @@ class AuthController extends Controller
 {
     public function login(): void
     {
-        if (is_logged_in()) {
-            redirect_after_login();
+        if (is_logged_in('customer')) {
+            redirect_after_login('customer');
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
                 error_log('CSRF validation failed for auth/login.');
                 set_flash('error', 'Your form has expired. Please try again.');
-                $this->render('auth/login', ['pageTitle' => 'Login']);
+                $this->render('auth/login', ['pageTitle' => 'Customer Login']);
                 return;
             }
 
             $email = trim((string) ($_POST['email'] ?? ''));
             $password = (string) ($_POST['password'] ?? '');
 
-            $attemptKey = hash('sha256', strtolower($email));
+            $attemptKey = hash('sha256', 'customer:' . strtolower($email));
             $attempts = $_SESSION['login_attempts'] ?? [];
             $attempt = $attempts[$attemptKey] ?? ['count' => 0, 'locked_until' => 0];
             if ((int) $attempt['locked_until'] > time()) {
                 set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
-                $this->render('auth/login', ['pageTitle' => 'Login']);
+                $this->render('auth/login', ['pageTitle' => 'Customer Login']);
                 return;
             }
 
@@ -37,15 +37,16 @@ class AuthController extends Controller
             $user = $email !== '' ? User::findByEmail($email) : null;
             if ($user && $user['account_status'] === 'Active' && $password !== '' && password_verify($password, $user['password_hash'])) {
                 if ($user['role'] !== ROLE_CUSTOMER) {
-                    set_flash('error', 'Staff members must log in through the Staff Portal.');
+                    set_flash('error', 'Invalid customer credentials. Please use your customer account.');
                     $this->render('auth/login', ['pageTitle' => 'Customer Login']);
                     return;
                 }
 
-                $_SESSION['login_attempts'] = [];
+                unset($attempts[$attemptKey]);
+                $_SESSION['login_attempts'] = $attempts;
                 login_user($user);
                 set_flash('success', 'Welcome back, ' . $user['full_name'] . '.');
-                redirect_after_login();
+                redirect_after_login('customer');
             }
 
             $attempt['count'] = (int) $attempt['count'] + 1;
@@ -58,7 +59,7 @@ class AuthController extends Controller
             }
             $attempts[$attemptKey] = $attempt;
             $_SESSION['login_attempts'] = $attempts;
-            $this->render('auth/login', ['pageTitle' => 'Login']);
+            $this->render('auth/login', ['pageTitle' => 'Customer Login']);
             return;
         }
 
@@ -67,8 +68,8 @@ class AuthController extends Controller
 
     public function staffLogin(): void
     {
-        if (is_logged_in()) {
-            redirect_after_login();
+        if (is_logged_in('staff')) {
+            redirect_after_login('staff');
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -82,7 +83,7 @@ class AuthController extends Controller
             $email = trim((string) ($_POST['email'] ?? ''));
             $password = (string) ($_POST['password'] ?? '');
 
-            $attemptKey = hash('sha256', strtolower($email));
+            $attemptKey = hash('sha256', 'staff:' . strtolower($email));
             $attempts = $_SESSION['login_attempts'] ?? [];
             $attempt = $attempts[$attemptKey] ?? ['count' => 0, 'locked_until' => 0];
             if ((int) $attempt['locked_until'] > time()) {
@@ -96,18 +97,24 @@ class AuthController extends Controller
             }
 
             $user = $email !== '' ? User::findByEmail($email) : null;
+            if ($user && User::isPendingActivation($user)) {
+                set_flash('error', 'Your staff account is pending activation. Please use your 24-hour invitation link to set your password.');
+                $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
+                return;
+            }
+
             if ($user && $user['account_status'] === 'Active' && $password !== '' && password_verify($password, $user['password_hash'])) {
-                // Ensure only staff can login here
                 if ($user['role'] === ROLE_CUSTOMER) {
-                    set_flash('error', 'Customers must log in through the public portal.');
+                    set_flash('error', 'Unauthorized access. Only council staff accounts may sign in here.');
                     $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
                     return;
                 }
 
-                $_SESSION['login_attempts'] = [];
+                unset($attempts[$attemptKey]);
+                $_SESSION['login_attempts'] = $attempts;
                 login_user($user);
                 set_flash('success', 'Welcome back, ' . $user['full_name'] . '.');
-                redirect_after_login();
+                redirect_after_login('staff');
             }
 
             $attempt['count'] = (int) $attempt['count'] + 1;
@@ -127,10 +134,97 @@ class AuthController extends Controller
         $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
     }
 
+    public function activate(): void
+    {
+        $token = trim((string) ($_GET['token'] ?? $_POST['token'] ?? ''));
+        $invitedUser = $token !== '' ? User::findByInvitationToken($token) : null;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
+                error_log('CSRF validation failed for auth/activate.');
+                set_flash('error', 'Your form has expired. Please try again.');
+                $this->redirect(BASE_URL . '/?r=auth/activate&token=' . urlencode($token));
+            }
+
+            if (!$invitedUser) {
+                $this->render('auth/activate', [
+                    'pageTitle' => 'Invalid Activation Link',
+                    'tokenStatus' => 'invalid',
+                    'token' => '',
+                    'invitedUser' => null,
+                ]);
+                return;
+            }
+
+            if (!empty($invitedUser['token_expired'])) {
+                $this->render('auth/activate', [
+                    'pageTitle' => 'Activation Link Expired',
+                    'tokenStatus' => 'expired',
+                    'token' => '',
+                    'invitedUser' => $invitedUser,
+                ]);
+                return;
+            }
+
+            $password = (string) ($_POST['password'] ?? '');
+            $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
+            $errors = [];
+
+            if ($password !== $confirmPassword) {
+                $errors[] = 'Passwords do not match.';
+            }
+            foreach (validate_password($password) as $passwordError) {
+                $errors[] = $passwordError;
+            }
+
+            if ($errors) {
+                set_flash('error', implode(' ', $errors));
+                $this->render('auth/activate', [
+                    'pageTitle' => 'Activate Staff Account',
+                    'tokenStatus' => 'valid',
+                    'token' => $token,
+                    'invitedUser' => $invitedUser,
+                ]);
+                return;
+            }
+
+            User::activateAccount((int) $invitedUser['user_id'], password_hash($password, PASSWORD_DEFAULT));
+            set_flash('success', 'Your staff account is now active. Please sign in with your new password.');
+            $this->redirect(BASE_URL . '/?r=auth/staffLogin');
+        }
+
+        if (!$invitedUser) {
+            $this->render('auth/activate', [
+                'pageTitle' => 'Invalid Activation Link',
+                'tokenStatus' => 'invalid',
+                'token' => '',
+                'invitedUser' => null,
+            ]);
+            return;
+        }
+
+        if (!empty($invitedUser['token_expired'])) {
+            $this->render('auth/activate', [
+                'pageTitle' => 'Activation Link Expired',
+                'tokenStatus' => 'expired',
+                'token' => '',
+                'invitedUser' => $invitedUser,
+            ]);
+            return;
+        }
+
+        $this->render('auth/activate', [
+            'pageTitle' => 'Activate Staff Account',
+            'tokenStatus' => 'valid',
+            'token' => $token,
+            'invitedUser' => $invitedUser,
+        ]);
+    }
+
     public function register(): void
     {
-        if (is_logged_in()) {
-            redirect_after_login();
+        if (is_logged_in('customer')) {
+            redirect_after_login('customer');
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -193,7 +287,7 @@ class AuthController extends Controller
 
             login_user($user);
             set_flash('success', 'Registration successful. Your customer account is ready.');
-            redirect_after_login();
+            redirect_after_login('customer');
             return;
         }
 
@@ -207,10 +301,14 @@ class AuthController extends Controller
             return;
         }
 
-        $redirectUrl = BASE_URL . '/?r=auth/login';
-        if (isset($_SESSION['user']) && $_SESSION['user']['role'] !== ROLE_CUSTOMER) {
-            $redirectUrl = BASE_URL . '/?r=auth/staffLogin';
+        $portalScope = strtolower(trim((string) ($_POST['portal'] ?? $_GET['portal'] ?? '')));
+        if ($portalScope !== 'staff' && $portalScope !== 'customer') {
+            $portalScope = is_staff_portal_request() ? 'staff' : 'customer';
         }
+
+        $redirectUrl = $portalScope === 'staff'
+            ? BASE_URL . '/?r=auth/staffLogin'
+            : BASE_URL . '/?r=auth/login';
 
         if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
             error_log('CSRF validation failed for auth/logout.');
@@ -218,7 +316,7 @@ class AuthController extends Controller
             $this->redirect($redirectUrl);
         }
 
-        logout_user();
+        logout_user($portalScope);
         set_flash('success', 'You have been logged out successfully.');
         $this->redirect($redirectUrl);
     }

@@ -3,8 +3,9 @@ declare(strict_types=1);
 $flash = get_flash();
 $booking = $booking ?? [];
 $payment = $payment ?? null;
-$user = current_user();
-$backRoute = ($user['role'] ?? '') === ROLE_CUSTOMER ? 'booking/customerList' : 'booking/index';
+$isStaffPortal = ($portalScope ?? '') === 'staff' || (($portalScope ?? '') !== 'customer' && is_staff_portal_request());
+$backRoute = $isStaffPortal ? 'booking/index' : 'booking/customerList#history';
+$receiptUrl = BASE_URL . '/?r=payment/receipt&booking_id=' . (int) ($booking['booking_id'] ?? 0) . ($isStaffPortal ? '&portal=staff' : '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,18 +17,27 @@ $backRoute = ($user['role'] ?? '') === ROLE_CUSTOMER ? 'booking/customerList' : 
     <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
 </head>
 <body>
-    <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
+    <?php if ($isStaffPortal): ?>
+        <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
+    <?php else: ?>
+        <?php include APP_VIEW_PATH . '/layouts/public_header.php'; ?>
+    <?php endif; ?>
 
     <?php if ($flash): ?>
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
     <?php endif; ?>
 
-    <main class="container dashboard-layout">
+    <main id="main-content" class="container dashboard-layout">
         <?php include APP_VIEW_PATH . '/layouts/sidebar.php'; ?>
 
-        <section class="dashboard-main">
-            <div class="card">
-                <h1>Booking details</h1>
+        <section class="dashboard-main" aria-labelledby="booking-details-title">
+            <header class="page-header">
+                <span class="eyebrow">Booking Specification</span>
+                <h1 id="booking-details-title">Booking details</h1>
+                <p>Reference <?php echo e($booking['booking_reference'] ?? '-'); ?> &bull; Charge breakdown and verification status.</p>
+            </header>
+
+            <article class="card">
                 <dl class="details-list">
                     <div><dt>Reference</dt><dd><?php echo e($booking['booking_reference']); ?></dd></div>
                     <div><dt>Customer</dt><dd><?php echo e($booking['customer_name'] ?? '-'); ?></dd></div>
@@ -42,17 +52,20 @@ $backRoute = ($user['role'] ?? '') === ROLE_CUSTOMER ? 'booking/customerList' : 
                     <div><dt>Payment status</dt><dd><?php echo status_badge($payment['payment_status'] ?? null, 'Not submitted'); ?></dd></div>
                     <div><dt>Receipt number</dt><dd><?php echo e($payment['receipt_number'] ?? '-'); ?></dd></div>
                 </dl>
-                <?php if (($payment['payment_status'] ?? '') === PAYMENT_STATUS_VERIFIED): ?>
-                    <p><a class="button secondary" href="<?php echo e(BASE_URL . '/?r=payment/receipt&booking_id=' . (int) $booking['booking_id']); ?>">View receipt</a></p>
-                <?php endif; ?>
-            </div>
 
-            <div style="margin-top: 16px;">
-                <a class="button secondary" href="<?php echo e(BASE_URL . '/?r=' . $backRoute); ?>">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -3px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    Back to bookings
-                </a>
-            </div>
+                <div class="button-row" style="margin-top: 20px;">
+                    <?php if (($payment['payment_status'] ?? '') === PAYMENT_STATUS_VERIFIED): ?>
+                        <a class="button primary" href="<?php echo e($receiptUrl); ?>">
+                            <i class="fi fi-sr-receipt" aria-hidden="true"></i>
+                            <span>View receipt</span>
+                        </a>
+                    <?php endif; ?>
+                    <a class="button secondary" href="<?php echo e(BASE_URL . '/?r=' . $backRoute); ?>">
+                        <i class="fi fi-sr-arrow-left" aria-hidden="true"></i>
+                        <span>Back to bookings</span>
+                    </a>
+                </div>
+            </article>
         </section>
     </main>
 

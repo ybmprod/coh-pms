@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-$user = current_user();
+$user = current_customer_user();
 $venue = $venue ?? [];
 $flash = get_flash();
 
@@ -26,50 +26,50 @@ $description = trim((string) ($venue['description'] ?? ''));
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
     <?php endif; ?>
 
-    <main class="container dashboard-layout">
+    <main id="main-content" class="container dashboard-layout">
         <?php include APP_VIEW_PATH . '/layouts/sidebar.php'; ?>
 
-        <section class="dashboard-main">
+        <section class="dashboard-main" aria-labelledby="venue-detail-title">
             <a href="<?php echo e(BASE_URL . '/?r=venue/customerList'); ?>" class="cv-back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <i class="fi fi-sr-arrow-small-left" aria-hidden="true"></i>
                 All venues
             </a>
 
             <header class="cv-hero<?php echo $imageUrl === '' ? ' cv-hero-noimage' : ''; ?>"
-                <?php if ($imageUrl !== ''): ?>style="background-image: linear-gradient(180deg, rgba(8, 45, 70, 0.10) 0%, rgba(8, 45, 70, 0.35) 45%, rgba(8, 45, 70, 0.92) 100%), url('<?php echo e($imageUrl); ?>');"<?php endif; ?>>
+                <?php if ($imageUrl !== ''): ?>style="background-image: linear-gradient(180deg, rgba(8, 45, 70, 0.12) 0%, rgba(8, 45, 70, 0.42) 45%, rgba(8, 45, 70, 0.94) 100%), url('<?php echo e($imageUrl); ?>');"<?php endif; ?>>
                 <div class="cv-hero-content">
                     <span class="cv-type-chip cv-type-chip-static"><?php echo e($venue['venue_type'] ?? 'Venue'); ?></span>
-                    <h1><?php echo e($venue['venue_name'] ?? 'Venue'); ?></h1>
+                    <h1 id="venue-detail-title"><?php echo e($venue['venue_name'] ?? 'Venue'); ?></h1>
                     <p class="cv-hero-location">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <i class="fi fi-sr-marker" aria-hidden="true"></i>
                         <?php echo e($venue['location'] ?? '-'); ?>
                     </p>
                 </div>
             </header>
 
-            <div class="cv-stats">
+            <dl class="cv-stats" aria-label="Venue specifications">
                 <div class="cv-stat">
-                    <span class="cv-meta-label">Capacity</span>
-                    <span class="cv-stat-value"><?php echo e(number_format((int) ($venue['capacity'] ?? 0))); ?> <small>guests</small></span>
+                    <dt class="cv-meta-label">Capacity</dt>
+                    <dd class="cv-stat-value" style="margin: 4px 0 0;"><?php echo e(number_format((int) ($venue['capacity'] ?? 0))); ?> <small>guests</small></dd>
                 </div>
                 <div class="cv-stat">
-                    <span class="cv-meta-label">Standard price</span>
-                    <span class="cv-stat-value cv-price"><?php echo e(money_format_usd((float) ($venue['standard_price'] ?? 0))); ?></span>
+                    <dt class="cv-meta-label">Standard price</dt>
+                    <dd class="cv-stat-value cv-price" style="margin: 4px 0 0;"><?php echo e(money_format_usd((float) ($venue['standard_price'] ?? 0))); ?></dd>
                 </div>
                 <div class="cv-stat">
-                    <span class="cv-meta-label">Venue type</span>
-                    <span class="cv-stat-value"><?php echo e($venue['venue_type'] ?? '-'); ?></span>
+                    <dt class="cv-meta-label">Venue type</dt>
+                    <dd class="cv-stat-value" style="margin: 4px 0 0;"><?php echo e($venue['venue_type'] ?? '-'); ?></dd>
                 </div>
                 <div class="cv-stat">
-                    <span class="cv-meta-label">Status</span>
-                    <span class="cv-stat-value"><?php echo status_badge($venueStatus); ?></span>
+                    <dt class="cv-meta-label">Status</dt>
+                    <dd class="cv-stat-value" style="margin: 4px 0 0;"><?php echo status_badge($venueStatus); ?></dd>
                 </div>
-            </div>
+            </dl>
 
             <div class="cv-detail-grid">
                 <div class="cv-detail-main">
-                    <section class="card">
-                        <h2 class="cv-section-title">About this venue</h2>
+                    <section class="card" aria-labelledby="about-venue-heading">
+                        <h2 id="about-venue-heading" class="cv-section-title">About this venue</h2>
                         <?php if ($description !== ''): ?>
                             <p style="margin: 0; white-space: pre-line;"><?php echo e($description); ?></p>
                         <?php else: ?>
@@ -77,13 +77,13 @@ $description = trim((string) ($venue['description'] ?? ''));
                         <?php endif; ?>
                     </section>
 
-                    <section class="card">
-                        <h2 class="cv-section-title">Facilities</h2>
+                    <section class="card" aria-labelledby="facilities-heading">
+                        <h2 id="facilities-heading" class="cv-section-title">Facilities</h2>
                         <?php if (!empty($facilities)): ?>
                             <ul class="cv-facilities">
                                 <?php foreach ($facilities as $facility): ?>
                                     <li>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        <i class="fi fi-sr-check-circle" aria-hidden="true"></i>
                                         <?php echo e($facility); ?>
                                     </li>
                                 <?php endforeach; ?>
@@ -94,16 +94,19 @@ $description = trim((string) ($venue['description'] ?? ''));
                     </section>
                 </div>
 
-                <aside class="card cv-book-card">
-                    <h2 class="cv-section-title">Book this venue</h2>
-                    <p style="margin: 0 0 6px; color: var(--muted); font-size: 0.88rem;">Standard charge</p>
+                <aside class="card cv-book-card" aria-labelledby="book-venue-heading">
+                    <h2 id="book-venue-heading" class="cv-section-title">Book this venue</h2>
+                    <p style="margin: 0 0 6px; color: var(--muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;">Standard charge</p>
                     <p class="cv-book-price"><?php echo e(money_format_usd((float) ($venue['standard_price'] ?? 0))); ?></p>
-                    <p style="margin: 0 0 18px; color: var(--muted); font-size: 0.82rem;">Final price may change with weekday, weekend or off-peak pricing rules. You will see the exact total before you submit.</p>
+                    <p style="margin: 0 0 18px; color: var(--muted); font-size: var(--text-xs);">Final price may change with weekday, weekend or off-peak pricing rules. You will see the exact total before you submit.</p>
 
                     <?php if ($isBookable): ?>
-                        <a href="<?php echo e(BASE_URL . '/?r=booking/customerList&venue_id=' . (int) ($venue['venue_id'] ?? 0) . '#request'); ?>" class="button primary" style="width: 100%;">Request booking</a>
+                        <a href="<?php echo e(BASE_URL . '/?r=booking/customerList&venue_id=' . (int) ($venue['venue_id'] ?? 0) . '#request'); ?>" class="button primary full-width">
+                            <i class="fi fi-sr-calendar-clock" aria-hidden="true"></i>
+                            <span>Request booking</span>
+                        </a>
                     <?php else: ?>
-                        <button type="button" class="button ghost" style="width: 100%;" disabled>Currently <?php echo e(strtolower($venueStatus)); ?></button>
+                        <button type="button" class="button ghost full-width" disabled>Currently <?php echo e(strtolower($venueStatus)); ?></button>
                     <?php endif; ?>
 
                     <ol class="cv-steps">

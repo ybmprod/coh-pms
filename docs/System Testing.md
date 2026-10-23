@@ -2,7 +2,7 @@
 
 **Project:** City of Harare Property Management System (COH-PMS)  
 **Document:** Chapter 5 Verification and Test Matrix  
-**Specification:** `docs/COH-PMS_SPEC.md` / `AGENTS.md`  
+**Specification:** `docs/Property Management System Specifications.md` / `Agents.md`  
 
 ---
 

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $flashMessage = $flash ?? null;
-$loggedIn = is_logged_in();
+$loggedIn = is_logged_in('staff');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,7 +13,7 @@ $loggedIn = is_logged_in();
     <title>Staff Portal | <?php echo e(APP_NAME); ?></title>
     <link rel="stylesheet" href="<?php echo e(BASE_URL . '/assets/css/style.css'); ?>">
 </head>
-<body style="background: #f4f7fa;">
+<body>
     <?php include APP_VIEW_PATH . '/layouts/staff_header.php'; ?>
 
     <?php if ($flashMessage): ?>
@@ -22,52 +22,71 @@ $loggedIn = is_logged_in();
         </div>
     <?php endif; ?>
 
-    <main class="container home-main">
-        <section class="hero" style="text-align: center; padding-top: 48px; padding-bottom: 56px; background: radial-gradient(circle at 90% 20%, rgb(217 164 65 / 23%), transparent 27%), linear-gradient(130deg, #0b3c5d 0%, #082d46 100%);">
-            <div style="margin-bottom: 24px;">
-                <img src="<?php echo e(BASE_URL); ?>/assets/images/coh-pms-logo.png" alt="COH Logo" style="width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; background: #fff; box-shadow: var(--shadow-md);">
-            </div>
-            <span class="hero-eyebrow">City of Harare Property Management System</span>
-            <h1 style="margin-left: auto; margin-right: auto;">Council Staff Portal</h1>
-            <p style="margin-left: auto; margin-right: auto;">
-                Welcome to the internal workspace. Manage venues, review customer booking requests, process payments, and configure system pricing rules.
-            </p>
-            <div class="button-row" style="justify-content: center;">
-                <?php if ($loggedIn): ?>
-                    <a href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>" class="button primary">
-                        Enter Dashboard
-                    </a>
-                <?php else: ?>
-                    <a href="<?php echo e(BASE_URL . '/?r=auth/staffLogin'); ?>" class="button primary">
-                        Staff Login
-                    </a>
-                <?php endif; ?>
+    <main id="main-content" class="container home-main">
+        <section class="hero" aria-labelledby="staff-hero-heading">
+            <div class="hero-grid">
+                <div>
+                    <span class="hero-eyebrow">City of Harare Property Management System</span>
+                    <h1 id="staff-hero-heading">Council Staff Portal</h1>
+                    <p>
+                        Welcome to the internal municipal workspace. Manage council venues, review customer booking requests, verify payments, and configure approved tariff rules.
+                    </p>
+                    <div class="button-row">
+                        <?php if ($loggedIn): ?>
+                            <a href="<?php echo e(BASE_URL . '/?r=dashboard/index'); ?>" class="button primary">
+                                Enter Dashboard
+                            </a>
+                        <?php else: ?>
+                            <a href="<?php echo e(BASE_URL . '/?r=auth/staffLogin'); ?>" class="button primary">
+                                Staff Login
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <aside class="hero-aside" aria-label="Operational roles">
+                    <h2>Authorized Divisions</h2>
+                    <ul class="hero-aside-list">
+                        <li><span>Booking Officers</span><strong>Slot Review</strong></li>
+                        <li><span>Revenue Officers</span><strong>Receipting</strong></li>
+                        <li><span>Administrators</span><strong>Tariff &amp; Staff</strong></li>
+                        <li><span>Council Management</span><strong>Audit Reports</strong></li>
+                    </ul>
+                </aside>
             </div>
         </section>
 
         <section class="home-steps" aria-labelledby="steps-title">
-            <div class="section-heading">
-                <span class="eyebrow">Portal Overview</span>
-                <h2 id="steps-title">Administrative Workflows</h2>
-            </div>
+            <header class="section-heading">
+                <div>
+                    <span class="eyebrow">Portal Overview</span>
+                    <h2 id="steps-title">Administrative Workflows</h2>
+                </div>
+            </header>
 
-            <div class="status-grid">
-                <article class="card step-card">
-                    <span class="step-number" aria-hidden="true">01</span>
-                    <h3>Review Bookings</h3>
-                    <p>Process pending customer requests. Approve or reject bookings based on availability.</p>
+            <div class="asymmetric-steps-grid">
+                <article class="card step-card step-card--featured">
+                    <div>
+                        <span class="step-number" aria-hidden="true">01</span>
+                        <h3>Review Bookings</h3>
+                        <p>Process pending customer requests with strict state-machine validation. Approve or reject bookings based on real-time facility availability.</p>
+                    </div>
                 </article>
 
                 <article class="card step-card">
-                    <span class="step-number" aria-hidden="true">02</span>
-                    <h3>Manage Venues</h3>
-                    <p>Update venue details, capacities, and base pricing for all council facilities.</p>
+                    <div>
+                        <span class="step-number" aria-hidden="true">02</span>
+                        <h3>Manage Venues</h3>
+                        <p>Update venue details, capacities, and base pricing for all council facilities.</p>
+                    </div>
                 </article>
 
                 <article class="card step-card">
-                    <span class="step-number" aria-hidden="true">03</span>
-                    <h3>Payment Verification</h3>
-                    <p>Verify customer payments and issue receipts for approved and completed bookings.</p>
+                    <div>
+                        <span class="step-number" aria-hidden="true">03</span>
+                        <h3>Payment Verification</h3>
+                        <p>Verify customer payments and issue official receipts for approved bookings.</p>
+                    </div>
                 </article>
             </div>
         </section>
@@ -76,4 +95,3 @@ $loggedIn = is_logged_in();
     <?php include APP_VIEW_PATH . '/layouts/footer.php'; ?>
 </body>
 </html>
-

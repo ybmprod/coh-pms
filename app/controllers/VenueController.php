@@ -6,7 +6,7 @@ class VenueController extends Controller
 {
     public function index(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER], 'staff')) {
             return;
         }
 
@@ -19,7 +19,7 @@ class VenueController extends Controller
 
     public function create(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER], 'staff')) {
             return;
         }
 
@@ -65,7 +65,7 @@ class VenueController extends Controller
 
     public function edit(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER], 'staff')) {
             return;
         }
 
@@ -126,8 +126,8 @@ class VenueController extends Controller
 
     public function customerList(): void
     {
-        if (!$this->requireAuth()) {
-            $this->redirect(BASE_URL . '/?r=auth/login');
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
+            return;
         }
 
         $venues = Venue::getActive();
@@ -139,8 +139,8 @@ class VenueController extends Controller
 
     public function details(): void
     {
-        if (!$this->requireAuth()) {
-            $this->redirect(BASE_URL . '/?r=auth/login');
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
+            return;
         }
 
         $venueId = (int) ($_GET['id'] ?? 0);

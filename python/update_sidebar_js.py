@@ -2,10 +2,14 @@
 # Adds active-tab memory (sessionStorage) to the tab switcher in
 # views/layouts/sidebar.php so the current tab survives page reloads.
 # Re-running it is harmless (the target text no longer matches) but unnecessary.
-# Original path at run time: www/ (run from the www folder).
+# Location: coh-pms/python/update_sidebar_js.py
+from pathlib import Path
 import sys
 
-with open("coh-pms/views/layouts/sidebar.php", "r", encoding="utf-8") as f:
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TARGET_FILE = PROJECT_ROOT / "views" / "layouts" / "sidebar.php"
+
+with open(TARGET_FILE, "r", encoding="utf-8") as f:
     content = f.read()
 
 old_js = """    function switchTab(hash) {
@@ -33,7 +37,7 @@ new_init = """    if (document.querySelector('.tab-section')) {
 
 content = content.replace(old_init, new_init)
 
-with open("coh-pms/views/layouts/sidebar.php", "w", encoding="utf-8") as f:
+with open(TARGET_FILE, "w", encoding="utf-8") as f:
     f.write(content)
 print("Done")
 

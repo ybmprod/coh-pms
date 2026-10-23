@@ -97,31 +97,37 @@ coh-pms/
 │   ├── coh_pms.sql       # Complete relational database DDL schema (5 tables, indexes, constraints)
 │   └── seed_data.sql     # Seed data for users, venues, active rules, bookings, and payments
 ├── docs/
-│   ├── COH-PMS_SPEC.md   # Master system specification
-│   ├── TESTING.md        # Comprehensive test matrix with automated and manual test cases
-│   ├── SCREENSHOTS.md    # Ordered list of UI pages for Chapter 5.4 dissertation inclusion
-│   └── CHANGES.md        # Detailed record of database, routing, and architectural modifications
+│   ├── Property Management System Specifications.md # Master system specification
+│   ├── System Architecture And Schema Changes.md    # Detailed record of database, routing, and architectural modifications
+│   ├── System Testing.md                            # Comprehensive test matrix with automated and manual test cases
+│   ├── System Screenshots.md                        # Ordered list of UI pages for Chapter 5.4 dissertation inclusion
+│   ├── Frontend Design Instructions.md              # UI/UX design engineering standards (OKLCH, AAA contrast, states)
+│   └── User Account Creation Strategy.md            # Admin-provisioned staff onboarding & 24-hour link activation spec
+├── docs 2/               # Reference view & stylesheet snapshot archives (*.txt)
 ├── public/               # The single public document root exposed to Apache
-│   ├── assets/           # Client-side CSS, JavaScript, and images
+│   ├── assets/           # Client-side CSS, JavaScript, fonts, and images
 │   │   ├── css/style.css # Harare municipal palette styling, responsive layout, status badges, print media rules
 │   │   └── js/booking.js # Real-time AJAX availability and live pricing calculation
 │   ├── uploads/venues/   # Uploaded venue photographs (protected by .htaccess script execution restriction)
 │   ├── .htaccess         # URL rewriting and routing directives
 │   └── index.php         # Front controller with security headers, route whitelisting, and reflection method guard
+├── python/               # Python utility & migration scripts (split_users.py, update_bookings.py, update_sidebar*.py)
+├── python/               # Python utility & migration scripts (split_users.py, update_bookings.py, update_sidebar*.py)
 ├── tests/
 │   ├── logic_test.php    # Objective 2 pricing rule engine verification (percentage, surcharge, off-peak, priority)
 │   ├── f7_security_test.php # Security hardening verification (password policy, MIME checks, router reflection guard)
 │   └── suite_test.php    # Comprehensive test suite covering business transitions, validation, and security rules
 ├── views/
-│   ├── auth/             # Login and registration templates
+│   ├── auth/             # Login, registration, staff login, and staff password activation templates
 │   ├── customer/         # Customer venue browsing, booking request form, booking details, receipt views
 │   ├── errors/           # 403 Forbidden, 404 Not Found, and 500 Server Error error pages
 │   ├── layouts/          # Reusable layout components (public header, staff header, sidebar, footer)
 │   ├── staff/            # Role-specific dashboard, user management, venue CRUD, pricing rules, booking review, payment verification, reports
-│   └── home.php          # Welcome landing page
-├── .htaccess             # Denies direct web access to app/, config/, database/, docs/, tests/, views/
-├── AGENTS.md             # Developer instruction handbook
-└── README.md             # Setup guide, credentials, and architectural overview
+│   ├── home.php          # Public welcome landing page
+│   └── staff_home.php    # Staff portal landing page
+├── .htaccess             # Denies direct web access to app/, config/, database/, docs/, python/, tests/, views/
+├── Agents.md             # Developer instruction handbook
+└── Readme.md             # Setup guide, credentials, and architectural overview
 ```
 
 ---

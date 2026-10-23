@@ -2,9 +2,14 @@
 # Converts the customer "My bookings" sidebar link into an accordion with
 # "Venue Booking Request" and "My Booking History" sub-links.
 # It replaces fixed line indices, so re-running it will corrupt sidebar.php.
-# Original path at run time: www/ (run from the www folder).
+# Location: coh-pms/python/update_sidebar.py
+from pathlib import Path
 import sys
-with open("coh-pms/views/layouts/sidebar.php", "r", encoding="utf-8") as f:
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TARGET_FILE = PROJECT_ROOT / "views" / "layouts" / "sidebar.php"
+
+with open(TARGET_FILE, "r", encoding="utf-8") as f:
     lines = f.readlines()
 
 new_lines = []
@@ -28,7 +33,7 @@ replacement = """                <?php
                 </li>
 """
 lines[110:115] = [replacement]
-with open("coh-pms/views/layouts/sidebar.php", "w", encoding="utf-8") as f:
+with open(TARGET_FILE, "w", encoding="utf-8") as f:
     f.writelines(lines)
 print("Done")
 

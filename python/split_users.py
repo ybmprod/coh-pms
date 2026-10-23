@@ -2,10 +2,14 @@
 # Splits the User Management list in views/staff/users.php into two tabs:
 # #staff (council staff) and #customers (public customers).
 # Re-running it would fail or produce broken markup.
-# Original path at run time: www/ (run from the www folder).
+# Location: coh-pms/python/split_users.py
+from pathlib import Path
 import sys
 
-with open("coh-pms/views/staff/users.php", "r", encoding="utf-8") as f:
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TARGET_FILE = PROJECT_ROOT / "views" / "staff" / "users.php"
+
+with open(TARGET_FILE, "r", encoding="utf-8") as f:
     content = f.read()
 
 # Split the PHP array at the top
@@ -43,7 +47,7 @@ new_list_divs = f"""<div id="staff" class="card tab-section active" data-tab="st
 
 content = content[:old_list_div_start] + new_list_divs + content[old_list_div_end:]
 
-with open("coh-pms/views/staff/users.php", "w", encoding="utf-8") as f:
+with open(TARGET_FILE, "w", encoding="utf-8") as f:
     f.write(content)
 
 print("Done")

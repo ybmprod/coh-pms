@@ -6,7 +6,7 @@ class BookingController extends Controller
 {
     public function index(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT], 'staff')) {
             return;
         }
 
@@ -26,11 +26,11 @@ class BookingController extends Controller
 
     public function customerList(): void
     {
-        if ($this->denyIfNotRole([ROLE_CUSTOMER])) {
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
             return;
         }
 
-        $user = current_user();
+        $user = current_customer_user();
         $this->render('customer/bookings', [
             'pageTitle' => 'My Bookings',
             'bookings' => Booking::getByCustomer((int) $user['id']),
@@ -40,7 +40,7 @@ class BookingController extends Controller
 
     public function create(): void
     {
-        if ($this->denyIfNotRole([ROLE_CUSTOMER])) {
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
             return;
         }
 
@@ -54,7 +54,7 @@ class BookingController extends Controller
             $this->redirect(BASE_URL . '/?r=booking/customerList');
         }
 
-        $user = current_user();
+        $user = current_customer_user();
         try {
             $booking = (new BookingService())->createBooking($_POST, (int) $user['id']);
         } catch (Throwable $e) {
@@ -62,7 +62,7 @@ class BookingController extends Controller
             $this->redirect(BASE_URL . '/?r=booking/customerList');
         }
         set_flash('success', 'Booking request submitted. Reference: ' . ($booking['booking_reference'] ?? ''));
-        $this->redirect(BASE_URL . '/?r=booking/customerList');
+        $this->redirect(BASE_URL . '/?r=booking/customerList#history');
     }
 
     public function checkAvailability(): void
@@ -73,7 +73,7 @@ class BookingController extends Controller
             echo json_encode(['available' => false, 'message' => 'Method not allowed.']);
             return;
         }
-        if (!$this->requireAuth()) {
+        if (!is_logged_in('customer') && !is_logged_in('staff')) {
             http_response_code(401);
             echo json_encode(['available' => false, 'message' => 'Please sign in to check availability.']);
             return;
@@ -116,7 +116,7 @@ class BookingController extends Controller
 
     public function cancel(): void
     {
-        if ($this->denyIfNotRole([ROLE_CUSTOMER])) {
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
             return;
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -126,13 +126,13 @@ class BookingController extends Controller
         if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
             error_log('CSRF validation failed for booking/cancel.');
             set_flash('error', 'Your session has expired. Please try again.');
-            $this->redirect(BASE_URL . '/?r=booking/customerList');
+            $this->redirect(BASE_URL . '/?r=booking/customerList#history');
         }
 
         try {
             (new BookingService())->cancelByCustomer(
                 (int) ($_POST['booking_id'] ?? 0),
-                (int) current_user()['id']
+                (int) current_customer_user()['id']
             );
             set_flash('success', 'Booking cancelled successfully.');
         } catch (DomainException $exception) {
@@ -141,13 +141,25 @@ class BookingController extends Controller
             error_log('Failed to cancel booking: ' . $e->getMessage());
             set_flash('error', 'Booking could not be cancelled. Please try again.');
         }
-        $this->redirect(BASE_URL . '/?r=booking/customerList');
+        $this->redirect(BASE_URL . '/?r=booking/customerList#history');
     }
 
     public function details(): void
     {
-        if (!$this->requireAuth()) {
-            $this->redirect(BASE_URL . '/?r=auth/login');
+        $portalScope = is_staff_portal_request() ? 'staff' : 'customer';
+        if ($portalScope === 'staff') {
+            if ($this->denyIfNotRole([
+                ROLE_ADMINISTRATOR,
+                ROLE_BOOKING_OFFICER,
+                ROLE_REVENUE_OFFICER,
+                ROLE_COUNCIL_MANAGEMENT,
+            ], 'staff')) {
+                return;
+            }
+        } else {
+            if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
+                return;
+            }
         }
 
         $booking = Booking::findById((int) ($_GET['id'] ?? 0));
@@ -157,24 +169,16 @@ class BookingController extends Controller
             return;
         }
 
-        $user = current_user();
-        if ($user['role'] === ROLE_CUSTOMER) {
-            if ((int) $booking['customer_id'] !== (int) $user['id']) {
-                http_response_code(403);
-                $this->render('errors/403', ['pageTitle' => 'Forbidden']);
-                return;
-            }
-        } elseif ($this->denyIfNotRole([
-            ROLE_ADMINISTRATOR,
-            ROLE_BOOKING_OFFICER,
-            ROLE_REVENUE_OFFICER,
-            ROLE_COUNCIL_MANAGEMENT,
-        ])) {
+        $user = current_user($portalScope);
+        if ($portalScope === 'customer' && (int) $booking['customer_id'] !== (int) $user['id']) {
+            http_response_code(403);
+            $this->render('errors/403', ['pageTitle' => 'Forbidden']);
             return;
         }
 
         $this->render('customer/booking_details', [
             'pageTitle' => 'Booking ' . $booking['booking_reference'],
+            'portalScope' => $portalScope,
             'booking' => $booking,
             'payment' => Payment::findLatestByBookingId((int) $booking['booking_id']),
         ]);
@@ -182,7 +186,7 @@ class BookingController extends Controller
 
     public function updateStatus(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER], 'staff')) {
             return;
         }
 
@@ -199,7 +203,7 @@ class BookingController extends Controller
 
         $bookingId = (int) ($_POST['booking_id'] ?? 0);
         $status = trim((string) ($_POST['booking_status'] ?? ''));
-        $actor = current_user();
+        $actor = current_staff_user();
         try {
             (new BookingService())->changeStatus($bookingId, $status, (int) $actor['id'], (string) $actor['role']);
         } catch (DomainException $e) {

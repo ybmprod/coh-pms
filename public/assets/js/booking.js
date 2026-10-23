@@ -24,7 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return `US$ ${Number(value).toFixed(2)}`;
     }
 
+    function setLoadingState(isLoading) {
+        if (!result) return;
+        result.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+        [standardCharge, ruleName, adjustment, totalCharge].forEach((el) => {
+            if (!el) return;
+            el.classList.toggle('skeleton', isLoading);
+            if (isLoading) {
+                el.textContent = 'US$ 000.00';
+            }
+        });
+    }
+
     function showPrice(data) {
+        setLoadingState(false);
         standardCharge.textContent = formatMoney(data.standard_charge);
         ruleName.textContent = data.rule_name || 'No matching rule';
         adjustment.textContent = formatMoney(data.adjustment_amount);
@@ -32,7 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function checkAvailability() {
-        if (fields.some((field) => !field.value)) {
+        fields.forEach((f) => f && f.removeAttribute('aria-invalid'));
+
+        if (fields.some((field) => !field || !field.value)) {
+            setLoadingState(false);
             message.textContent = 'Select a venue, date, start time, and end time.';
             result.classList.remove('flash-success', 'flash-error');
             standardCharge.textContent = '-';
@@ -48,7 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
         endpoint.searchParams.set('booking_date', date.value);
         endpoint.searchParams.set('start_time', start.value);
         endpoint.searchParams.set('end_time', end.value);
-        message.textContent = 'Checking availability...';
+
+        message.textContent = 'Checking slot availability and pricing rules...';
+        result.classList.remove('flash-success', 'flash-error');
+        setLoadingState(true);
 
         try {
             const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
@@ -60,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
             message.textContent = data.message || 'Availability could not be checked.';
             result.classList.toggle('flash-success', data.available === true);
             result.classList.toggle('flash-error', data.available !== true);
+            if (data.available !== true && end && start && end.value <= start.value) {
+                end.setAttribute('aria-invalid', 'true');
+            }
             showPrice(data);
         } catch (error) {
             if (currentRequest !== requestNumber) {
@@ -73,19 +95,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fields.forEach((field) => {
+        if (!field) return;
         field.addEventListener('input', checkAvailability);
         field.addEventListener('change', checkAvailability);
     });
 
-    // Auto-close time picker when minutes are fully selected (input becomes valid)
     [start, end].forEach((field) => {
         if (field) {
-            field.addEventListener('input', function() {
-                // If it has a complete value like 'HH:MM', blur to close the clock
+            field.addEventListener('input', function () {
                 if (this.value && this.value.length >= 5) {
                     this.blur();
                 }
             });
         }
     });
+
+    if (fields.every((field) => field && field.value)) {
+        checkAvailability();
+    }
 });

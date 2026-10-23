@@ -18,24 +18,25 @@ $flash = get_flash();
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
     <?php endif; ?>
 
-    <main class="container narrow">
-        <section class="card form-card">
-            <div class="form-header">
-                <h1>Welcome back</h1>
+    <main id="main-content" class="container narrower">
+        <section class="card form-card" aria-labelledby="login-heading">
+            <header class="form-header">
+                <span class="eyebrow">Account Access</span>
+                <h1 id="login-heading">Welcome back</h1>
                 <p>Sign in to manage bookings and venue access.</p>
-            </div>
+            </header>
 
             <form method="post" action="<?php echo e(BASE_URL . '/?r=auth/login'); ?>" class="stacked-form">
                 <?php echo csrf_field(); ?>
 
                 <div class="field-group">
                     <label for="email">Email address</label>
-                    <input id="email" name="email" type="email" required value="">
+                    <input id="email" name="email" type="email" autocomplete="email" required value="">
                 </div>
 
                 <div class="field-group">
                     <label for="password">Password</label>
-                    <input id="password" name="password" type="password" required>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required>
                 </div>
 
                 <button type="submit" class="button primary full-width">Login</button>

@@ -6,18 +6,40 @@ class DashboardController extends Controller
 {
     public function index(): void
     {
-        if (!$this->requireAuth()) {
-            $this->redirect(BASE_URL . '/?r=auth/login');
+        if (!is_logged_in('staff') && is_logged_in('customer') && ($_GET['portal'] ?? '') !== 'staff') {
+            $this->redirect(BASE_URL . '/?r=dashboard/customer');
         }
 
-        $user = current_user();
+        if ($this->denyIfNotRole([
+            ROLE_ADMINISTRATOR,
+            ROLE_BOOKING_OFFICER,
+            ROLE_REVENUE_OFFICER,
+            ROLE_COUNCIL_MANAGEMENT,
+        ], 'staff')) {
+            return;
+        }
+
+        $user = current_staff_user();
         $this->render('staff/dashboard', [
-            'pageTitle' => 'Dashboard',
+            'pageTitle' => 'Council Dashboard',
+            'portalScope' => 'staff',
             'user' => $user,
-            'dashboardCounts' => $user['role'] === ROLE_CUSTOMER
-                ? []
-                : (new ReportService())->getDashboardSummary((string) $user['role']),
+            'dashboardCounts' => (new ReportService())->getDashboardSummary((string) $user['role']),
         ]);
     }
 
+    public function customer(): void
+    {
+        if ($this->denyIfNotRole([ROLE_CUSTOMER], 'customer')) {
+            return;
+        }
+
+        $user = current_customer_user();
+        $this->render('staff/dashboard', [
+            'pageTitle' => 'My Dashboard',
+            'portalScope' => 'customer',
+            'user' => $user,
+            'dashboardCounts' => [],
+        ]);
+    }
 }

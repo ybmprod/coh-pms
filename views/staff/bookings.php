@@ -3,7 +3,7 @@ declare(strict_types=1);
 $flash = get_flash();
 $bookings = $bookings ?? [];
 $bookingActions = $bookingActions ?? [];
-$user = current_user();
+$user = current_staff_user();
 $canReviewBookings = in_array($user['role'] ?? '', [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER], true);
 $actionLabels = [
     BOOKING_STATUS_APPROVED => 'Approve',
@@ -28,17 +28,20 @@ $actionLabels = [
         <div class="flash flash-<?php echo e($flash['type']); ?>" role="alert"><?php echo e($flash['message']); ?></div>
     <?php endif; ?>
 
-    <main class="container dashboard-layout">
+    <main id="main-content" class="container dashboard-layout">
         <?php include APP_VIEW_PATH . '/layouts/sidebar.php'; ?>
 
-        <section class="dashboard-main">
-            <div class="card">
-                <h1>Booking approvals</h1>
+        <section class="dashboard-main" aria-labelledby="booking-approvals-title">
+            <header class="page-header">
+                <h1 id="booking-approvals-title">Booking approvals</h1>
                 <p>Review customer requests, confirm payment status, and maintain booking records.</p>
-            </div>
+            </header>
 
-            <div class="card">
-                <h2>Booking queue</h2>
+            <section class="card" aria-labelledby="booking-queue-title">
+                <header class="section-heading">
+                    <h2 id="booking-queue-title">Booking queue</h2>
+                </header>
+
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -46,40 +49,52 @@ $actionLabels = [
                             <th>Customer</th>
                             <th>Venue</th>
                             <th>Date</th>
-                            <th>Charge</th>
+                            <th class="money">Charge</th>
                             <th>Status</th>
                             <th>Reviewed by</th>
                             <?php if ($canReviewBookings): ?><th>Action</th><?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($bookings as $booking): ?>
-                            <tr>
-                                <td><a href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id']); ?>"><?php echo e($booking['booking_reference']); ?></a></td>
-                                <td><?php echo e($booking['customer_name'] ?? '-'); ?></td>
-                                <td><?php echo e($booking['venue_name'] ?? '-'); ?></td>
-                                <td><?php echo e(format_date((string) $booking['booking_date']) . ' ' . $booking['start_time'] . '-' . $booking['end_time']); ?></td>
-                                <td><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
-                                <td><?php echo status_badge($booking['booking_status']); ?></td>
-                                <td><?php echo e($booking['reviewer_name'] ?? '-'); ?></td>
-                                <?php if ($canReviewBookings): ?>
-                                    <td>
-                                        <?php foreach ($bookingActions[(int) $booking['booking_id']] ?? [] as $nextStatus): ?>
-                                            <form method="post" action="<?php echo e(BASE_URL . '/?r=booking/updateStatus'); ?>" class="inline-form">
-                                                <?php echo csrf_field(); ?>
-                                                <input type="hidden" name="booking_id" value="<?php echo e((string) $booking['booking_id']); ?>">
-                                                <input type="hidden" name="booking_status" value="<?php echo e($nextStatus); ?>">
-                                                <?php $btnClass = in_array($nextStatus, [BOOKING_STATUS_APPROVED, BOOKING_STATUS_COMPLETED]) ? 'primary' : 'secondary'; ?>
-                                                <button type="submit" class="button <?php echo $btnClass; ?> small-button"><?php echo e($actionLabels[$nextStatus] ?? $nextStatus); ?></button>
-                                            </form>
-                                        <?php endforeach; ?>
-                                    </td>
-                                <?php endif; ?>
-                            </tr>
-                        <?php endforeach; ?>
+                        <?php if (empty($bookings)): ?>
+                            <tr><td colspan="<?php echo $canReviewBookings ? '8' : '7'; ?>">No bookings found.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($bookings as $booking): ?>
+                                <tr>
+                                    <td><a href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id'] . '&portal=staff'); ?>"><strong><?php echo e($booking['booking_reference']); ?></strong></a></td>
+                                    <td><?php echo e($booking['customer_name'] ?? '-'); ?></td>
+                                    <td><?php echo e($booking['venue_name'] ?? '-'); ?></td>
+                                    <td><?php echo e(format_date((string) $booking['booking_date']) . ' ' . $booking['start_time'] . '-' . $booking['end_time']); ?></td>
+                                    <td class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
+                                    <td><?php echo status_badge($booking['booking_status']); ?></td>
+                                    <td><?php echo e($booking['reviewer_name'] ?? '-'); ?></td>
+                                    <?php if ($canReviewBookings): ?>
+                                        <td>
+                                            <?php foreach ($bookingActions[(int) $booking['booking_id']] ?? [] as $nextStatus): ?>
+                                                <?php
+                                                $isDestructive = in_array($nextStatus, [BOOKING_STATUS_REJECTED, BOOKING_STATUS_CANCELLED], true);
+                                                $btnClass = in_array($nextStatus, [BOOKING_STATUS_APPROVED, BOOKING_STATUS_COMPLETED], true) ? 'primary' : ($isDestructive ? 'danger' : 'secondary');
+                                                $label = $actionLabels[$nextStatus] ?? $nextStatus;
+                                                ?>
+                                                <form method="post" action="<?php echo e(BASE_URL . '/?r=booking/updateStatus'); ?>" class="inline-form"
+                                                    <?php if ($isDestructive): ?>
+                                                        data-confirm-title="<?php echo e($label); ?> booking"
+                                                        data-confirm="Are you sure you want to <?php echo e(strtolower($label)); ?> booking <?php echo e($booking['booking_reference']); ?>?"
+                                                    <?php endif; ?>>
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="booking_id" value="<?php echo e((string) $booking['booking_id']); ?>">
+                                                    <input type="hidden" name="booking_status" value="<?php echo e($nextStatus); ?>">
+                                                    <button type="submit" class="button <?php echo $btnClass; ?> small-button"><?php echo e($label); ?></button>
+                                                </form>
+                                            <?php endforeach; ?>
+                                        </td>
+                                    <?php endif; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
-            </div>
+            </section>
         </section>
     </main>
 
