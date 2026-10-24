@@ -136,71 +136,83 @@ $pricingRules = $pricingRules ?? [];
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($pricingRules as $rule): ?>
-                            <?php $formId = 'edit-rule-' . (int) $rule['pricing_rule_id']; ?>
+                        <?php if (empty($pricingRules)): ?>
                             <tr>
-                                <td>
-                                    <input type="text" name="rule_name" form="<?php echo e($formId); ?>" aria-label="Rule name" value="<?php echo e($rule['rule_name']); ?>">
-                                </td>
-                                <td>
-                                    <select name="venue_type" form="<?php echo e($formId); ?>" aria-label="Venue type">
-                                        <?php foreach (['All','Community Hall','Community Centre','Stadium','Open Space','Other'] as $venueType): ?>
-                                            <option value="<?php echo e($venueType); ?>" <?php echo $venueType === $rule['venue_type'] ? 'selected' : ''; ?>><?php echo e($venueType); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="rule_type" form="<?php echo e($formId); ?>" aria-label="Rule type">
-                                        <?php foreach (['Weekday Discount','Weekend Surcharge','Off-Peak Discount','Long Booking Discount','Peak Demand Surcharge'] as $ruleType): ?>
-                                            <option value="<?php echo e($ruleType); ?>" <?php echo $ruleType === $rule['rule_type'] ? 'selected' : ''; ?>><?php echo e($ruleType); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="compact-stack">
-                                        <select name="adjustment_type" form="<?php echo e($formId); ?>" aria-label="Adjustment type">
-                                            <?php foreach (['Percentage','Fixed Amount'] as $adjustmentType): ?>
-                                                <option value="<?php echo e($adjustmentType); ?>" <?php echo $adjustmentType === $rule['adjustment_type'] ? 'selected' : ''; ?>><?php echo e($adjustmentType); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <input type="number" step="0.01" name="adjustment_value" form="<?php echo e($formId); ?>" aria-label="Adjustment value" value="<?php echo e((string) $rule['adjustment_value']); ?>" min="0">
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="compact-stack">
-                                        <input type="text" name="days_of_week" form="<?php echo e($formId); ?>" aria-label="Days of week" value="<?php echo e((string) ($rule['days_of_week'] ?? '')); ?>" placeholder="Days (Mon,Tue)">
-                                        <input type="number" step="0.5" name="min_hours" form="<?php echo e($formId); ?>" aria-label="Minimum hours" value="<?php echo e((string) ($rule['min_hours'] ?? '')); ?>" min="0.5" placeholder="Min hrs">
-                                        <input type="date" name="start_date" form="<?php echo e($formId); ?>" aria-label="Start date" value="<?php echo e((string) ($rule['start_date'] ?? '')); ?>">
-                                        <input type="date" name="end_date" form="<?php echo e($formId); ?>" aria-label="End date" value="<?php echo e((string) ($rule['end_date'] ?? '')); ?>">
-                                    </div>
-                                </td>
-                                <td>
-                                    <input type="number" name="priority" form="<?php echo e($formId); ?>" aria-label="Rule priority" value="<?php echo e((string) $rule['priority']); ?>" min="1" style="max-width: 80px;">
-                                </td>
-                                <td>
-                                    <select name="rule_status" form="<?php echo e($formId); ?>" aria-label="Rule status">
-                                        <?php foreach (['Active','Inactive'] as $status): ?>
-                                            <option value="<?php echo e($status); ?>" <?php echo $status === $rule['rule_status'] ? 'selected' : ''; ?>><?php echo e($status); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="button-row">
-                                        <form id="<?php echo e($formId); ?>" method="post" action="<?php echo e(BASE_URL . '/?r=pricingrule/edit'); ?>" class="inline-form">
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="pricing_rule_id" value="<?php echo e((string) $rule['pricing_rule_id']); ?>">
-                                            <button type="submit" class="button primary small-button">Update</button>
-                                        </form>
-                                        <form method="post" action="<?php echo e(BASE_URL . '/?r=pricingrule/toggleStatus'); ?>" class="inline-form">
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="pricing_rule_id" value="<?php echo e((string) $rule['pricing_rule_id']); ?>">
-                                            <?php $btnClass = $rule['rule_status'] === 'Active' ? 'secondary' : 'primary'; ?>
-                                            <button type="submit" class="button <?php echo $btnClass; ?> small-button"><?php echo $rule['rule_status'] === 'Active' ? 'Disable' : 'Enable'; ?></button>
-                                        </form>
+                                <td colspan="8" class="empty-state-cell">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="fi fi-sr-tags" aria-hidden="true"></i></span>
+                                        <h3>No pricing rules configured</h3>
+                                        <p>No tariff rules exist yet. Create a rule to automatically adjust standard venue pricing.</p>
                                     </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($pricingRules as $rule): ?>
+                                <?php $formId = 'edit-rule-' . (int) $rule['pricing_rule_id']; ?>
+                                <tr>
+                                    <td data-label="Rule">
+                                        <input type="text" name="rule_name" form="<?php echo e($formId); ?>" aria-label="Rule name" value="<?php echo e($rule['rule_name']); ?>">
+                                    </td>
+                                    <td data-label="Venue">
+                                        <select name="venue_type" form="<?php echo e($formId); ?>" aria-label="Venue type">
+                                            <?php foreach (['All','Community Hall','Community Centre','Stadium','Open Space','Other'] as $venueType): ?>
+                                                <option value="<?php echo e($venueType); ?>" <?php echo $venueType === $rule['venue_type'] ? 'selected' : ''; ?>><?php echo e($venueType); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td data-label="Type">
+                                        <select name="rule_type" form="<?php echo e($formId); ?>" aria-label="Rule type">
+                                            <?php foreach (['Weekday Discount','Weekend Surcharge','Off-Peak Discount','Long Booking Discount','Peak Demand Surcharge'] as $ruleType): ?>
+                                                <option value="<?php echo e($ruleType); ?>" <?php echo $ruleType === $rule['rule_type'] ? 'selected' : ''; ?>><?php echo e($ruleType); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td data-label="Adjustment">
+                                        <div class="compact-stack">
+                                            <select name="adjustment_type" form="<?php echo e($formId); ?>" aria-label="Adjustment type">
+                                                <?php foreach (['Percentage','Fixed Amount'] as $adjustmentType): ?>
+                                                    <option value="<?php echo e($adjustmentType); ?>" <?php echo $adjustmentType === $rule['adjustment_type'] ? 'selected' : ''; ?>><?php echo e($adjustmentType); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <input type="number" step="0.01" name="adjustment_value" form="<?php echo e($formId); ?>" aria-label="Adjustment value" value="<?php echo e((string) $rule['adjustment_value']); ?>" min="0">
+                                        </div>
+                                    </td>
+                                    <td data-label="Conditions">
+                                        <div class="compact-stack">
+                                            <input type="text" name="days_of_week" form="<?php echo e($formId); ?>" aria-label="Days of week" value="<?php echo e((string) ($rule['days_of_week'] ?? '')); ?>" placeholder="Days (Mon,Tue)">
+                                            <input type="number" step="0.5" name="min_hours" form="<?php echo e($formId); ?>" aria-label="Minimum hours" value="<?php echo e((string) ($rule['min_hours'] ?? '')); ?>" min="0.5" placeholder="Min hrs">
+                                            <input type="date" name="start_date" form="<?php echo e($formId); ?>" aria-label="Start date" value="<?php echo e((string) ($rule['start_date'] ?? '')); ?>">
+                                            <input type="date" name="end_date" form="<?php echo e($formId); ?>" aria-label="End date" value="<?php echo e((string) ($rule['end_date'] ?? '')); ?>">
+                                        </div>
+                                    </td>
+                                    <td data-label="Priority">
+                                        <input type="number" name="priority" form="<?php echo e($formId); ?>" aria-label="Rule priority" value="<?php echo e((string) $rule['priority']); ?>" min="1" style="max-width: 80px;">
+                                    </td>
+                                    <td data-label="Status">
+                                        <select name="rule_status" form="<?php echo e($formId); ?>" aria-label="Rule status">
+                                            <?php foreach (['Active','Inactive'] as $status): ?>
+                                                <option value="<?php echo e($status); ?>" <?php echo $status === $rule['rule_status'] ? 'selected' : ''; ?>><?php echo e($status); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td data-label="Action">
+                                        <div class="button-row">
+                                            <form id="<?php echo e($formId); ?>" method="post" action="<?php echo e(BASE_URL . '/?r=pricingrule/edit'); ?>" class="inline-form">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="pricing_rule_id" value="<?php echo e((string) $rule['pricing_rule_id']); ?>">
+                                                <button type="submit" class="button primary small-button">Update</button>
+                                            </form>
+                                            <form method="post" action="<?php echo e(BASE_URL . '/?r=pricingrule/toggleStatus'); ?>" class="inline-form">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="pricing_rule_id" value="<?php echo e((string) $rule['pricing_rule_id']); ?>">
+                                                <?php $btnClass = $rule['rule_status'] === 'Active' ? 'secondary' : 'primary'; ?>
+                                                <button type="submit" class="button <?php echo $btnClass; ?> small-button"><?php echo $rule['rule_status'] === 'Active' ? 'Disable' : 'Enable'; ?></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </section>

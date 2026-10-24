@@ -6,7 +6,7 @@ class PricingruleController extends Controller
 {
     public function index(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -19,7 +19,7 @@ class PricingruleController extends Controller
 
     public function create(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -41,7 +41,17 @@ class PricingruleController extends Controller
             $this->redirect(BASE_URL . '/?r=pricingrule/index');
         }
 
-        PricingRule::create($data);
+        $ruleId = PricingRule::create($data);
+
+        if (function_exists('audit_log')) {
+            audit_log('pricing_rule.create', [
+                'pricing_rule_id' => $ruleId,
+                'rule_name' => $data['rule_name'],
+                'rule_type' => $data['rule_type'],
+                'adjustment_type' => $data['adjustment_type'],
+                'adjustment_value' => $data['adjustment_value'],
+            ]);
+        }
 
         set_flash('success', 'Pricing rule created successfully.');
         $this->redirect(BASE_URL . '/?r=pricingrule/index');
@@ -49,7 +59,7 @@ class PricingruleController extends Controller
 
     public function edit(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -81,13 +91,22 @@ class PricingruleController extends Controller
 
         PricingRule::update($pricingRuleId, $data);
 
+        if (function_exists('audit_log')) {
+            audit_log('pricing_rule.update', [
+                'pricing_rule_id' => $pricingRuleId,
+                'rule_name' => $data['rule_name'],
+                'rule_type' => $data['rule_type'],
+                'adjustment_value' => $data['adjustment_value'],
+            ]);
+        }
+
         set_flash('success', 'Pricing rule updated successfully.');
         $this->redirect(BASE_URL . '/?r=pricingrule/index');
     }
 
     public function toggleStatus(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -112,6 +131,15 @@ class PricingruleController extends Controller
 
         $nextStatus = $rule['rule_status'] === 'Active' ? 'Inactive' : 'Active';
         PricingRule::setStatus($pricingRuleId, $nextStatus);
+
+        if (function_exists('audit_log')) {
+            audit_log('pricing_rule.status_toggle', [
+                'pricing_rule_id' => $pricingRuleId,
+                'rule_name' => $rule['rule_name'],
+                'previous_status' => $rule['rule_status'],
+                'new_status' => $nextStatus,
+            ]);
+        }
 
         set_flash('success', 'Pricing rule status updated to ' . $nextStatus . '.');
         $this->redirect(BASE_URL . '/?r=pricingrule/index');

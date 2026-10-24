@@ -24,7 +24,7 @@ $venues = $venues ?? [];
 
         <section class="dashboard-main" aria-labelledby="venue-mgmt-title">
             <header class="page-header">
-                <h1>Venue Management</h1>
+                <h1 id="venue-mgmt-title">Venue Management</h1>
                 <p>Add and update council venue records, including availability and image upload.</p>
             </header>
 
@@ -116,49 +116,61 @@ $venues = $venues ?? [];
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($venues as $venue): ?>
-                            <?php $formId = 'edit-venue-' . (int) $venue['venue_id']; ?>
+                        <?php if (empty($venues)): ?>
                             <tr>
-                                <td>
-                                    <input type="text" name="venue_name" form="<?php echo e($formId); ?>" aria-label="Venue name" value="<?php echo e($venue['venue_name']); ?>">
-                                </td>
-                                <td>
-                                    <?php if (!empty($venue['image_path'])): ?>
-                                        <img src="<?php echo e(venue_image_url($venue['image_path'])); ?>" alt="<?php echo e($venue['venue_name']); ?>" class="venue-image">
-                                    <?php endif; ?>
-                                    <label for="venue-image-<?php echo e((string) $venue['venue_id']); ?>" style="font-size: var(--text-xs); font-weight: 600; display: block; margin-bottom: 4px;">Replace image</label>
-                                    <input id="venue-image-<?php echo e((string) $venue['venue_id']); ?>" type="file" name="image" form="<?php echo e($formId); ?>" accept="image/png,image/jpeg,image/webp" style="font-size: var(--text-xs); max-width: 170px;">
-                                </td>
-                                <td>
-                                    <select name="venue_type" form="<?php echo e($formId); ?>" aria-label="Venue type">
-                                        <?php foreach (['Community Hall','Community Centre','Stadium','Open Space','Other'] as $type): ?>
-                                            <option value="<?php echo e($type); ?>" <?php echo $type === $venue['venue_type'] ? 'selected' : ''; ?>><?php echo e($type); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" name="location" form="<?php echo e($formId); ?>" aria-label="Location" value="<?php echo e($venue['location']); ?>">
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" name="standard_price" form="<?php echo e($formId); ?>" aria-label="Standard price" value="<?php echo e((string) $venue['standard_price']); ?>" style="max-width: 110px;">
-                                </td>
-                                <td>
-                                    <select name="venue_status" form="<?php echo e($formId); ?>" aria-label="Venue status">
-                                        <?php foreach (['Available','Unavailable','Under Maintenance'] as $status): ?>
-                                            <option value="<?php echo e($status); ?>" <?php echo $status === $venue['venue_status'] ? 'selected' : ''; ?>><?php echo e($status); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <form id="<?php echo e($formId); ?>" method="post" action="<?php echo e(BASE_URL . '/?r=venue/edit'); ?>" enctype="multipart/form-data" class="inline-form">
-                                        <?php echo csrf_field(); ?>
-                                        <input type="hidden" name="venue_id" value="<?php echo e((string) $venue['venue_id']); ?>">
-                                        <input type="number" name="capacity" aria-label="Capacity" value="<?php echo e((string) $venue['capacity']); ?>" min="1" style="max-width: 95px;">
-                                        <button type="submit" class="button primary small-button">Update</button>
-                                    </form>
+                                <td colspan="7" class="empty-state-cell">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="fi fi-sr-building" aria-hidden="true"></i></span>
+                                        <h3>No venues registered</h3>
+                                        <p>No municipal venues exist in the database. Use the Add venue form to register one.</p>
+                                    </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($venues as $venue): ?>
+                                <?php $formId = 'edit-venue-' . (int) $venue['venue_id']; ?>
+                                <tr>
+                                    <td data-label="Name">
+                                        <input type="text" name="venue_name" form="<?php echo e($formId); ?>" aria-label="Venue name" value="<?php echo e($venue['venue_name']); ?>">
+                                    </td>
+                                    <td data-label="Image">
+                                        <?php if (!empty($venue['image_path'])): ?>
+                                            <img src="<?php echo e(venue_image_url($venue['image_path'])); ?>" alt="<?php echo e($venue['venue_name']); ?>" class="venue-image">
+                                        <?php endif; ?>
+                                        <label for="venue-image-<?php echo e((string) $venue['venue_id']); ?>" style="font-size: var(--text-xs); font-weight: 600; display: block; margin-bottom: 4px;">Replace image</label>
+                                        <input id="venue-image-<?php echo e((string) $venue['venue_id']); ?>" type="file" name="image" form="<?php echo e($formId); ?>" accept="image/png,image/jpeg,image/webp" style="font-size: var(--text-xs); max-width: 170px;">
+                                    </td>
+                                    <td data-label="Type">
+                                        <select name="venue_type" form="<?php echo e($formId); ?>" aria-label="Venue type">
+                                            <?php foreach (['Community Hall','Community Centre','Stadium','Open Space','Other'] as $type): ?>
+                                                <option value="<?php echo e($type); ?>" <?php echo $type === $venue['venue_type'] ? 'selected' : ''; ?>><?php echo e($type); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td data-label="Location">
+                                        <input type="text" name="location" form="<?php echo e($formId); ?>" aria-label="Location" value="<?php echo e($venue['location']); ?>">
+                                    </td>
+                                    <td data-label="Price (US$)">
+                                        <input type="number" step="0.01" name="standard_price" form="<?php echo e($formId); ?>" aria-label="Standard price" value="<?php echo e((string) $venue['standard_price']); ?>" style="max-width: 110px;">
+                                    </td>
+                                    <td data-label="Status">
+                                        <select name="venue_status" form="<?php echo e($formId); ?>" aria-label="Venue status">
+                                            <?php foreach (['Available','Unavailable','Under Maintenance'] as $status): ?>
+                                                <option value="<?php echo e($status); ?>" <?php echo $status === $venue['venue_status'] ? 'selected' : ''; ?>><?php echo e($status); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td data-label="Capacity &amp; Action">
+                                        <form id="<?php echo e($formId); ?>" method="post" action="<?php echo e(BASE_URL . '/?r=venue/edit'); ?>" enctype="multipart/form-data" class="inline-form">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="venue_id" value="<?php echo e((string) $venue['venue_id']); ?>">
+                                            <input type="number" name="capacity" aria-label="Capacity" value="<?php echo e((string) $venue['capacity']); ?>" min="1" style="max-width: 95px;">
+                                            <button type="submit" class="button primary small-button">Update</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </section>

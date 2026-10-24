@@ -10,6 +10,7 @@ require_once __DIR__ . '/../app/helpers/flash_helper.php';
 require_once __DIR__ . '/../app/helpers/format_helper.php';
 require_once __DIR__ . '/../app/helpers/validation_helper.php';
 require_once __DIR__ . '/../app/helpers/upload_helper.php';
+require_once __DIR__ . '/../app/helpers/audit_helper.php';
 require_once __DIR__ . '/../app/services/BookingService.php';
 require_once __DIR__ . '/../app/services/AvailabilityService.php';
 require_once __DIR__ . '/../app/services/PricingService.php';
@@ -57,6 +58,11 @@ runCheck('SEC-04', 'Valid password Admin@123 passes validation', function() {
     return empty(validate_password('Admin@123'));
 });
 
+runCheck('SEC-04B', 'Bcrypt password hashing and validation formats match', function() {
+    $hash = hash_password_bcrypt('Admin@123');
+    return is_bcrypt_hash($hash) && !is_bcrypt_hash('plain');
+});
+
 // Input Sanitization & Escaping
 runCheck('SEC-05', 'XSS string is escaped by e() helper', function() {
     $xss = '<script>alert(1)</script>';
@@ -70,6 +76,10 @@ runCheck('SEC-06', 'Router dispatches valid route to target controller and actio
     return $c === 'BookingController' && $a === 'customerList';
 });
 
+runCheck('SEC-06B', 'Router rejects path traversal and unexpected characters', function() {
+    return !Router::isValidRoute('../secret') && !Router::isValidRoute('booking/list;DROP') && Router::isValidRoute('home/index');
+});
+
 runCheck('SEC-07', 'Protected Controller base methods are blocked from direct dispatch', function() {
     $ctrl = new VenueController();
     $method = new ReflectionMethod($ctrl, 'render');
@@ -80,7 +90,7 @@ runCheck('SEC-08', 'Path traversal in route controller is blocked by whitelist',
     return preg_match('/^[a-z]+$/i', '..') !== 1;
 });
 
-// Image Upload MIME Inspection
+// Image Upload MIME Inspection & Whitelist
 runCheck('SEC-09', 'PHP file disguised as PNG is rejected by MIME inspection', function() {
     $tmp = tempnam(sys_get_temp_dir(), 'test_disguised_');
     file_put_contents($tmp, '<?php phpinfo(); ?>');
@@ -88,6 +98,23 @@ runCheck('SEC-09', 'PHP file disguised as PNG is rejected by MIME inspection', f
     $mime = $finfo->file($tmp);
     unlink($tmp);
     return !in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true);
+});
+
+// Rate limiting & Audit log
+runCheck('SEC-10', 'Rate limiter throttles after 5 failed login attempts', function() {
+    clear_login_failures('suite_test', 'user@harare.zw');
+    for ($i = 0; $i < 5; $i++) {
+        $state = record_login_failure('suite_test', 'user@harare.zw');
+    }
+    $isLocked = !empty($state['is_locked']);
+    clear_login_failures('suite_test', 'user@harare.zw');
+    return $isLocked;
+});
+
+runCheck('SEC-11', 'Audit log writes securely to storage/logs', function() {
+    audit_log('suite.test_event', ['test_key' => 'verified_val', 'password' => 'hidden']);
+    $content = file_get_contents(APP_LOG_PATH . '/audit.log');
+    return str_contains($content, 'suite.test_event') && !str_contains($content, 'hidden');
 });
 
 // Booking Status Transition Rules (BookingService)

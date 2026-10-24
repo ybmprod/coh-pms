@@ -147,7 +147,8 @@ function is_logged_in(?string $scope = null): bool
 function login_user(array $user): void
 {
     session_regenerate_id(true);
-    unset($_SESSION['user']);
+    unset($_SESSION['user'], $_SESSION['session_expired']);
+    $_SESSION['last_activity'] = time();
     $userId = (int) $user['user_id'];
     if (($user['role'] ?? '') === ROLE_CUSTOMER) {
         $_SESSION['customer_user_id'] = $userId;
@@ -179,20 +180,20 @@ function logout_user(?string $scope = null): void
 
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
-        setcookie(
-            session_name(),
-            '',
-            time() - 42000,
-            $params['path'],
-            $params['domain'],
-            $params['secure'],
-            $params['httponly']
-        );
+        setcookie(session_name(), '', [
+            'expires' => time() - 42000,
+            'path' => $params['path'] ?? '/',
+            'domain' => $params['domain'] ?? '',
+            'secure' => (bool) ($params['secure'] ?? false),
+            'httponly' => (bool) ($params['httponly'] ?? true),
+            'samesite' => $params['samesite'] ?? 'Lax',
+        ]);
     }
 
     session_destroy();
     session_id('');
     session_start();
+    session_regenerate_id(true);
 }
 
 function redirect_after_login(?string $scope = null): void

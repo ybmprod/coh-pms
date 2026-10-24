@@ -68,7 +68,7 @@ $customerUsers = array_filter($users, fn($u) => $u['role'] === ROLE_CUSTOMER);
 
                         <div class="field-group">
                             <label for="email">Council email</label>
-                            <input id="email" name="email" type="email" placeholder="officer@coh.co.zw" required>
+                            <input id="email" name="email" type="email" placeholder="officer@hararecity.co.zw" required>
                         </div>
 
                         <div class="field-group">
@@ -110,53 +110,61 @@ $customerUsers = array_filter($users, fn($u) => $u['role'] === ROLE_CUSTOMER);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($staffUsers as $existingUser): ?>
-                            <?php
-                            $isPendingInvite = User::isPendingActivation($existingUser);
-                            $isInviteExpired = $isPendingInvite && User::isInvitationExpired($existingUser);
-                            $isActive = !$isPendingInvite && $existingUser['account_status'] === 'Active';
-                            ?>
+                        <?php if (empty($staffUsers)): ?>
                             <tr>
-                                <td><strong><?php echo e($existingUser['full_name']); ?></strong></td>
-                                <td><?php echo e($existingUser['email']); ?></td>
-                                <td><?php echo e($existingUser['role']); ?></td>
-                                <td>
-                                    <?php if ($isPendingInvite): ?>
-                                        <span class="status-badge pending">
-                                            <?php echo $isInviteExpired ? 'Invite Expired' : 'Pending Activation'; ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="status-badge <?php echo e($isActive ? 'active' : 'inactive'); ?>">
-                                            <?php echo e($existingUser['account_status']); ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($isPendingInvite): ?>
-                                        <form method="post" action="<?php echo e(BASE_URL . '/?r=user/resendInvite'); ?>" class="inline-form">
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
-                                            <button type="submit" class="button primary small-button">
-                                                <i class="fi fi-sr-paper-plane" aria-hidden="true"></i>
-                                                <span>Resend Invitation</span>
-                                            </button>
-                                        </form>
-                                    <?php else: ?>
-                                        <form method="post" action="<?php echo e(BASE_URL . '/?r=user/toggleStatus'); ?>" class="inline-form"
-                                            <?php if ($isActive): ?>
-                                                data-confirm-title="Deactivate account"
-                                                data-confirm="Are you sure you want to deactivate <?php echo e($existingUser['full_name']); ?>?"
-                                            <?php endif; ?>>
-                                            <?php echo csrf_field(); ?>
-                                            <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
-                                            <button type="submit" class="button <?php echo $isActive ? 'secondary' : 'primary'; ?> small-button">
-                                                <?php echo e($isActive ? 'Deactivate' : 'Activate'); ?>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
+                                <td colspan="5" class="empty-state-cell">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="fi fi-sr-users-alt" aria-hidden="true"></i></span>
+                                        <h3>No staff members found</h3>
+                                        <p>No staff profiles have been provisioned yet.</p>
+                                    </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($staffUsers as $existingUser): ?>
+                                <?php
+                                $isPendingInvite = User::isPendingActivation($existingUser);
+                                $isInviteExpired = $isPendingInvite && User::isInvitationExpired($existingUser);
+                                $isActive = !$isPendingInvite && $existingUser['account_status'] === 'Active';
+                                ?>
+                                <tr>
+                                    <td data-label="Name"><strong><?php echo e($existingUser['full_name']); ?></strong></td>
+                                    <td data-label="Email"><?php echo e($existingUser['email']); ?></td>
+                                    <td data-label="Role"><?php echo e($existingUser['role']); ?></td>
+                                    <td data-label="Status">
+                                        <?php if ($isPendingInvite): ?>
+                                            <?php echo status_badge($isInviteExpired ? 'Invite Expired' : 'Pending Activation'); ?>
+                                        <?php else: ?>
+                                            <?php echo status_badge($existingUser['account_status']); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td data-label="Action">
+                                        <?php if ($isPendingInvite): ?>
+                                            <form method="post" action="<?php echo e(BASE_URL . '/?r=user/resendInvite'); ?>" class="inline-form">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
+                                                <button type="submit" class="button primary small-button">
+                                                    <i class="fi fi-sr-paper-plane" aria-hidden="true"></i>
+                                                    <span>Resend Invitation</span>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <form method="post" action="<?php echo e(BASE_URL . '/?r=user/toggleStatus'); ?>" class="inline-form"
+                                                <?php if ($isActive): ?>
+                                                    data-confirm-title="Deactivate account"
+                                                    data-confirm="Are you sure you want to deactivate <?php echo e($existingUser['full_name']); ?>?"
+                                                <?php endif; ?>>
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
+                                                <button type="submit" class="button <?php echo $isActive ? 'secondary' : 'primary'; ?> small-button">
+                                                    <?php echo e($isActive ? 'Deactivate' : 'Activate'); ?>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </section>
@@ -177,32 +185,42 @@ $customerUsers = array_filter($users, fn($u) => $u['role'] === ROLE_CUSTOMER);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($customerUsers as $existingUser): ?>
-                            <?php $isActive = $existingUser['account_status'] === 'Active'; ?>
+                        <?php if (empty($customerUsers)): ?>
                             <tr>
-                                <td><strong><?php echo e($existingUser['full_name']); ?></strong></td>
-                                <td><?php echo e($existingUser['email']); ?></td>
-                                <td><?php echo e($existingUser['role']); ?></td>
-                                <td>
-                                    <span class="status-badge <?php echo e($isActive ? 'active' : 'inactive'); ?>">
-                                        <?php echo e($existingUser['account_status']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <form method="post" action="<?php echo e(BASE_URL . '/?r=user/toggleStatus'); ?>" class="inline-form"
-                                        <?php if ($isActive): ?>
-                                            data-confirm-title="Deactivate customer"
-                                            data-confirm="Are you sure you want to deactivate <?php echo e($existingUser['full_name']); ?>?"
-                                        <?php endif; ?>>
-                                        <?php echo csrf_field(); ?>
-                                        <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
-                                        <button type="submit" class="button <?php echo $isActive ? 'secondary' : 'primary'; ?> small-button">
-                                            <?php echo e($isActive ? 'Deactivate' : 'Activate'); ?>
-                                        </button>
-                                    </form>
+                                <td colspan="5" class="empty-state-cell">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="fi fi-sr-user" aria-hidden="true"></i></span>
+                                        <h3>No customer accounts</h3>
+                                        <p>No registered customer accounts found.</p>
+                                    </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($customerUsers as $existingUser): ?>
+                                <?php $isActive = $existingUser['account_status'] === 'Active'; ?>
+                                <tr>
+                                    <td data-label="Name"><strong><?php echo e($existingUser['full_name']); ?></strong></td>
+                                    <td data-label="Email"><?php echo e($existingUser['email']); ?></td>
+                                    <td data-label="Role"><?php echo e($existingUser['role']); ?></td>
+                                    <td data-label="Status">
+                                        <?php echo status_badge($existingUser['account_status']); ?>
+                                    </td>
+                                    <td data-label="Action">
+                                        <form method="post" action="<?php echo e(BASE_URL . '/?r=user/toggleStatus'); ?>" class="inline-form"
+                                            <?php if ($isActive): ?>
+                                                data-confirm-title="Deactivate customer"
+                                                data-confirm="Are you sure you want to deactivate <?php echo e($existingUser['full_name']); ?>?"
+                                            <?php endif; ?>>
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="user_id" value="<?php echo e((string) $existingUser['user_id']); ?>">
+                                            <button type="submit" class="button <?php echo $isActive ? 'secondary' : 'primary'; ?> small-button">
+                                                <?php echo e($isActive ? 'Deactivate' : 'Activate'); ?>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </section>

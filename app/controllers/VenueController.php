@@ -51,7 +51,15 @@ class VenueController extends Controller
 
         $data['image_path'] = $savedImage;
         try {
-            Venue::create($data);
+            $venueId = Venue::create($data);
+            if (function_exists('audit_log')) {
+                audit_log('venue.create', [
+                    'venue_id' => $venueId,
+                    'venue_name' => $data['venue_name'],
+                    'venue_type' => $data['venue_type'],
+                    'standard_price' => $data['standard_price'],
+                ]);
+            }
         } catch (Throwable $exception) {
             $this->deleteVenueImage($savedImage);
             error_log('Venue creation failed: ' . $exception->getMessage());
@@ -108,6 +116,13 @@ class VenueController extends Controller
         try {
             if (!Venue::update($venueId, $data)) {
                 throw new RuntimeException('Venue update did not complete.');
+            }
+            if (function_exists('audit_log')) {
+                audit_log('venue.update', [
+                    'venue_id' => $venueId,
+                    'venue_name' => $data['venue_name'],
+                    'venue_status' => $data['venue_status'],
+                ]);
             }
         } catch (Throwable $exception) {
             $this->deleteVenueImage($savedImage);

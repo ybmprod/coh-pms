@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/helpers/format_helper.php';
 require_once __DIR__ . '/../app/helpers/validation_helper.php';
 require_once __DIR__ . '/../app/helpers/csrf_helper.php';
 require_once __DIR__ . '/../app/helpers/flash_helper.php';
+require_once __DIR__ . '/../app/helpers/audit_helper.php';
 require_once __DIR__ . '/../app/helpers/auth_helper.php';
 require_once __DIR__ . '/../app/helpers/upload_helper.php';
 require_once __DIR__ . '/../app/core/Controller.php';
@@ -35,12 +36,14 @@ require_once __DIR__ . '/../app/services/ReportService.php';
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';");
+header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()');
 
 $rawRoute = trim((string) ($_GET['r'] ?? ''));
 $route = $rawRoute === '' ? 'home/index' : $rawRoute;
 $routeParts = explode('/', trim($route, '/'));
 $routeController = $routeParts[0] ?? 'home';
-if (!preg_match('/^[a-z]+$/i', $routeController)) {
+if (!preg_match('/^[a-z]+$/i', $routeController) || !Router::isValidRoute($route)) {
     http_response_code(404);
     include __DIR__ . '/../views/errors/404.php';
     exit;

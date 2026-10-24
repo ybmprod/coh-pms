@@ -31,8 +31,10 @@ $flash = get_flash();
             </header>
 
             <?php if (empty($venues)): ?>
-                <section class="card">
-                    <p>No venues are available right now. Please check back later.</p>
+                <section class="card empty-state">
+                    <span class="empty-state-icon"><i class="fi fi-sr-building" aria-hidden="true"></i></span>
+                    <h3>No venues available</h3>
+                    <p>There are no municipal venues available for booking right now. Please check back later.</p>
                 </section>
             <?php else: ?>
                 <div class="cv-grid">

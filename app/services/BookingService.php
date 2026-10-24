@@ -41,8 +41,21 @@ class BookingService
             throw new DomainException('A booking can only be marked Completed after its date has passed.');
         }
 
+        $fromStatus = (string) $booking['booking_status'];
         if (!Booking::updateStatus($bookingId, $newStatus, $actorId, $pdo)) {
             throw new RuntimeException('Booking status could not be updated.');
+        }
+
+        if (function_exists('audit_log')) {
+            audit_log('booking.status_change', [
+                'booking_id' => $bookingId,
+                'booking_reference' => $booking['booking_reference'] ?? null,
+                'from_status' => $fromStatus,
+                'to_status' => $newStatus,
+                'actor_id' => $actorId,
+                'actor_role' => $actorRole,
+                'via_payment' => $paymentVerification,
+            ]);
         }
     }
 
@@ -68,6 +81,15 @@ class BookingService
 
         if (!Booking::updateStatus($bookingId, BOOKING_STATUS_CANCELLED)) {
             throw new RuntimeException('Booking could not be cancelled.');
+        }
+
+        if (function_exists('audit_log')) {
+            audit_log('booking.cancel', [
+                'booking_id' => $bookingId,
+                'booking_reference' => $booking['booking_reference'] ?? null,
+                'customer_id' => $customerId,
+                'previous_status' => $status,
+            ]);
         }
     }
 
@@ -109,10 +131,6 @@ class BookingService
             if ($venue['venue_status'] !== 'Available') {
                 throw new DomainException('This venue is not currently available.');
             }
-            // Removed restriction: Customers should be able to book venues despite exceeding estimated value
-            // if ($attendees > (int) $venue['capacity']) {
-            //     throw new DomainException('Number of attendees exceeds the venue capacity.');
-            // }
 
             $availability = (new AvailabilityService())->check($venueId, $date, $start, $end, 0, $pdo);
             if (!$availability['available']) {
@@ -138,6 +156,17 @@ class BookingService
             $this->assignBookingReference($bookingId, $date, $pdo);
             $booking = Booking::findById($bookingId, $pdo);
             $pdo->commit();
+
+            if (function_exists('audit_log')) {
+                audit_log('booking.create', [
+                    'booking_id' => $bookingId,
+                    'booking_reference' => $booking['booking_reference'] ?? null,
+                    'venue_id' => $venueId,
+                    'customer_id' => $customerId,
+                    'booking_date' => $date,
+                    'total_charge' => $charge['total_charge'],
+                ]);
+            }
 
             return $booking ?? ['booking_id' => $bookingId, 'booking_reference' => null];
         } catch (Throwable $exception) {

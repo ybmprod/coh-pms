@@ -15,11 +15,12 @@ function csrf_field(): string
     return '<input type="hidden" name="csrf_token" value="' . e(csrf_token()) . '">';
 }
 
-function verify_csrf_token(?string $token): bool
+function verify_csrf_token(?string $token = null): bool
 {
-    if (!is_string($token)) {
+    $candidate = $token ?? ($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null);
+    if (!is_string($candidate) || $candidate === '') {
         return false;
     }
 
-    return hash_equals(csrf_token(), $token);
+    return hash_equals(csrf_token(), $candidate);
 }

@@ -21,45 +21,59 @@ class AuthController extends Controller
             $email = trim((string) ($_POST['email'] ?? ''));
             $password = (string) ($_POST['password'] ?? '');
 
-            $attemptKey = hash('sha256', 'customer:' . strtolower($email));
-            $attempts = $_SESSION['login_attempts'] ?? [];
-            $attempt = $attempts[$attemptKey] ?? ['count' => 0, 'locked_until' => 0];
-            if ((int) $attempt['locked_until'] > time()) {
-                set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
-                $this->render('auth/login', ['pageTitle' => 'Customer Login']);
-                return;
-            }
+            $throttle = function_exists('get_login_throttle_state')
+                ? get_login_throttle_state('customer', $email)
+                : ['count' => 0, 'locked_until' => 0, 'is_locked' => false];
 
-            if ((int) $attempt['locked_until'] > 0) {
-                $attempt = ['count' => 0, 'locked_until' => 0];
+            if (!empty($throttle['is_locked'])) {
+                if (function_exists('audit_log')) {
+                    audit_log('auth.login.throttled', ['portal' => 'customer', 'email' => strtolower($email)]);
+                }
+                set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
+                $this->render('auth/login', ['pageTitle' => 'Customer Login', 'email' => $email]);
+                return;
             }
 
             $user = $email !== '' ? User::findByEmail($email) : null;
             if ($user && $user['account_status'] === 'Active' && $password !== '' && password_verify($password, $user['password_hash'])) {
                 if ($user['role'] !== ROLE_CUSTOMER) {
+                    if (function_exists('audit_log')) {
+                        audit_log('auth.login.portal_mismatch', ['portal' => 'customer', 'user_id' => (int) $user['user_id'], 'role' => $user['role']]);
+                    }
                     set_flash('error', 'Invalid customer credentials. Please use your customer account.');
-                    $this->render('auth/login', ['pageTitle' => 'Customer Login']);
+                    $this->render('auth/login', ['pageTitle' => 'Customer Login', 'email' => $email]);
                     return;
                 }
 
-                unset($attempts[$attemptKey]);
-                $_SESSION['login_attempts'] = $attempts;
+                if (function_exists('clear_login_failures')) {
+                    clear_login_failures('customer', $email);
+                }
                 login_user($user);
+                if (function_exists('audit_log')) {
+                    audit_log('auth.login.success', ['portal' => 'customer', 'user_id' => (int) $user['user_id'], 'role' => $user['role']]);
+                }
                 set_flash('success', 'Welcome back, ' . $user['full_name'] . '.');
                 redirect_after_login('customer');
             }
 
-            $attempt['count'] = (int) $attempt['count'] + 1;
-            if ($attempt['count'] >= 5) {
-                $attempt['count'] = 0;
-                $attempt['locked_until'] = time() + 300;
+            $failureState = function_exists('record_login_failure')
+                ? record_login_failure('customer', $email)
+                : ['is_locked' => false, 'count' => 1];
+
+            if (function_exists('audit_log')) {
+                audit_log('auth.login.failed', [
+                    'portal' => 'customer',
+                    'email' => strtolower($email),
+                    'locked' => !empty($failureState['is_locked']),
+                ]);
+            }
+
+            if (!empty($failureState['is_locked'])) {
                 set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
             } else {
                 set_flash('error', 'Invalid email or password.');
             }
-            $attempts[$attemptKey] = $attempt;
-            $_SESSION['login_attempts'] = $attempts;
-            $this->render('auth/login', ['pageTitle' => 'Customer Login']);
+            $this->render('auth/login', ['pageTitle' => 'Customer Login', 'email' => $email]);
             return;
         }
 
@@ -83,51 +97,68 @@ class AuthController extends Controller
             $email = trim((string) ($_POST['email'] ?? ''));
             $password = (string) ($_POST['password'] ?? '');
 
-            $attemptKey = hash('sha256', 'staff:' . strtolower($email));
-            $attempts = $_SESSION['login_attempts'] ?? [];
-            $attempt = $attempts[$attemptKey] ?? ['count' => 0, 'locked_until' => 0];
-            if ((int) $attempt['locked_until'] > time()) {
-                set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
-                $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
-                return;
-            }
+            $throttle = function_exists('get_login_throttle_state')
+                ? get_login_throttle_state('staff', $email)
+                : ['count' => 0, 'locked_until' => 0, 'is_locked' => false];
 
-            if ((int) $attempt['locked_until'] > 0) {
-                $attempt = ['count' => 0, 'locked_until' => 0];
+            if (!empty($throttle['is_locked'])) {
+                if (function_exists('audit_log')) {
+                    audit_log('auth.staff_login.throttled', ['portal' => 'staff', 'email' => strtolower($email)]);
+                }
+                set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
+                $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login', 'email' => $email]);
+                return;
             }
 
             $user = $email !== '' ? User::findByEmail($email) : null;
             if ($user && User::isPendingActivation($user)) {
+                if (function_exists('audit_log')) {
+                    audit_log('auth.staff_login.pending_activation', ['portal' => 'staff', 'user_id' => (int) $user['user_id']]);
+                }
                 set_flash('error', 'Your staff account is pending activation. Please use your 24-hour invitation link to set your password.');
-                $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
+                $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login', 'email' => $email]);
                 return;
             }
 
             if ($user && $user['account_status'] === 'Active' && $password !== '' && password_verify($password, $user['password_hash'])) {
                 if ($user['role'] === ROLE_CUSTOMER) {
+                    if (function_exists('audit_log')) {
+                        audit_log('auth.staff_login.portal_mismatch', ['portal' => 'staff', 'user_id' => (int) $user['user_id'], 'role' => $user['role']]);
+                    }
                     set_flash('error', 'Unauthorized access. Only council staff accounts may sign in here.');
-                    $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
+                    $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login', 'email' => $email]);
                     return;
                 }
 
-                unset($attempts[$attemptKey]);
-                $_SESSION['login_attempts'] = $attempts;
+                if (function_exists('clear_login_failures')) {
+                    clear_login_failures('staff', $email);
+                }
                 login_user($user);
+                if (function_exists('audit_log')) {
+                    audit_log('auth.staff_login.success', ['portal' => 'staff', 'user_id' => (int) $user['user_id'], 'role' => $user['role']]);
+                }
                 set_flash('success', 'Welcome back, ' . $user['full_name'] . '.');
                 redirect_after_login('staff');
             }
 
-            $attempt['count'] = (int) $attempt['count'] + 1;
-            if ($attempt['count'] >= 5) {
-                $attempt['count'] = 0;
-                $attempt['locked_until'] = time() + 300;
+            $failureState = function_exists('record_login_failure')
+                ? record_login_failure('staff', $email)
+                : ['is_locked' => false, 'count' => 1];
+
+            if (function_exists('audit_log')) {
+                audit_log('auth.staff_login.failed', [
+                    'portal' => 'staff',
+                    'email' => strtolower($email),
+                    'locked' => !empty($failureState['is_locked']),
+                ]);
+            }
+
+            if (!empty($failureState['is_locked'])) {
                 set_flash('error', 'Too many failed login attempts. Try again in 5 minutes.');
             } else {
                 set_flash('error', 'Invalid email or password.');
             }
-            $attempts[$attemptKey] = $attempt;
-            $_SESSION['login_attempts'] = $attempts;
-            $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login']);
+            $this->render('auth/staff_login', ['pageTitle' => 'Staff Portal Login', 'email' => $email]);
             return;
         }
 
@@ -188,7 +219,10 @@ class AuthController extends Controller
                 return;
             }
 
-            User::activateAccount((int) $invitedUser['user_id'], password_hash($password, PASSWORD_DEFAULT));
+            User::activateAccount((int) $invitedUser['user_id'], password_hash($password, PASSWORD_BCRYPT));
+            if (function_exists('audit_log')) {
+                audit_log('auth.activate.success', ['user_id' => (int) $invitedUser['user_id'], 'role' => $invitedUser['role']]);
+            }
             set_flash('success', 'Your staff account is now active. Please sign in with your new password.');
             $this->redirect(BASE_URL . '/?r=auth/staffLogin');
         }
@@ -265,7 +299,14 @@ class AuthController extends Controller
 
             if ($errors) {
                 set_flash('error', implode(' ', $errors));
-                $this->render('auth/register', ['pageTitle' => 'Register']);
+                $this->render('auth/register', [
+                    'pageTitle' => 'Register',
+                    'old' => [
+                        'full_name' => $fullName,
+                        'email' => $email,
+                        'phone_number' => $phoneNumber,
+                    ],
+                ]);
                 return;
             }
 
@@ -273,7 +314,7 @@ class AuthController extends Controller
                 'full_name' => $fullName,
                 'email' => $email,
                 'phone_number' => $phoneNumber,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'password_hash' => password_hash($password, PASSWORD_BCRYPT),
                 'role' => ROLE_CUSTOMER,
                 'account_status' => 'Active',
             ]);
@@ -286,6 +327,9 @@ class AuthController extends Controller
             }
 
             login_user($user);
+            if (function_exists('audit_log')) {
+                audit_log('auth.register.success', ['user_id' => $userId, 'role' => ROLE_CUSTOMER]);
+            }
             set_flash('success', 'Registration successful. Your customer account is ready.');
             redirect_after_login('customer');
             return;
@@ -314,6 +358,11 @@ class AuthController extends Controller
             error_log('CSRF validation failed for auth/logout.');
             set_flash('error', 'Your session has expired.');
             $this->redirect($redirectUrl);
+        }
+
+        $actor = current_user($portalScope);
+        if (function_exists('audit_log')) {
+            audit_log('auth.logout', ['portal' => $portalScope, 'user_id' => $actor['id'] ?? null]);
         }
 
         logout_user($portalScope);

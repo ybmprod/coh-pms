@@ -24,7 +24,13 @@ $userExpanded = str_contains(current_page_attr('user/index'), 'page');
 $dashboardRoute = $isStaffPortal ? 'dashboard/index' : 'dashboard/customer';
 ?>
 <aside class="sidebar" aria-label="Workspace navigation">
-    <nav aria-label="Main navigation">
+    <button class="sidebar-mobile-toggle" type="button" aria-expanded="false" aria-controls="sidebar-navigation" aria-label="Toggle navigation menu">
+        <i class="fi fi-sr-apps nav-icon" aria-hidden="true"></i>
+        <span>Navigation Menu</span>
+        <span class="mobile-toggle-chevron" aria-hidden="true"></span>
+    </button>
+
+    <nav id="sidebar-navigation" class="sidebar-nav-container" aria-label="Main navigation">
         <ul class="sidebar-nav">
             <li>
                 <a href="<?php echo e(BASE_URL . '/?r=' . $dashboardRoute); ?>"<?php echo current_page_attr($dashboardRoute); ?>>
@@ -151,8 +157,20 @@ $dashboardRoute = $isStaffPortal ? 'dashboard/index' : 'dashboard/customer';
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const accordionItems = document.querySelectorAll('.accordion-item');
+    // Mobile Navigation Drawer Toggle
+    const mobileToggle = document.querySelector('.sidebar-mobile-toggle');
+    const navContainer = document.getElementById('sidebar-navigation');
 
+    if (mobileToggle && navContainer) {
+        mobileToggle.addEventListener('click', function () {
+            const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+            mobileToggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+            navContainer.classList.toggle('is-open', !isExpanded);
+        });
+    }
+
+    // Accordion Sections
+    const accordionItems = document.querySelectorAll('.accordion-item');
     accordionItems.forEach(function (item) {
         const button = item.querySelector('.accordion-header');
         if (!button) return;
@@ -173,6 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Tab Switching
     function switchTab(hash) {
         if (!hash) return;
 
@@ -189,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isMatch) matched = true;
         });
 
-        document.querySelectorAll('.accordion-content a').forEach(function (link) {
+        document.querySelectorAll('.accordion-content a, .tab-link').forEach(function (link) {
             const linkHash = link.getAttribute('href')?.split('#')[1] || '';
             link.classList.toggle('is-active-tab', linkHash === targetId);
         });
@@ -209,5 +228,25 @@ document.addEventListener('DOMContentLoaded', function () {
             switchTab(window.location.hash);
         });
     }
+
+    // Automatic table responsive data-label assignment for mobile card transformation
+    document.querySelectorAll('.data-table').forEach(function (table) {
+        const headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+            return th.textContent.trim();
+        });
+        if (!headers.length) return;
+
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            const cells = row.querySelectorAll('td');
+            if (cells.length === 1 && cells[0].getAttribute('colspan')) {
+                return; // skip empty state row
+            }
+            cells.forEach(function (cell, idx) {
+                if (!cell.getAttribute('data-label') && headers[idx]) {
+                    cell.setAttribute('data-label', headers[idx]);
+                }
+            });
+        });
+    });
 });
 </script>

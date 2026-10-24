@@ -9,6 +9,11 @@ class User
 
     public static function create(array $data): int
     {
+        $passwordHash = (string) ($data['password_hash'] ?? '');
+        if (!str_starts_with($passwordHash, self::INVITE_PREFIX) && !preg_match('/^\$2[ayb]\$\d{2}\$[\/A-Za-z0-9.]{53}$/', $passwordHash)) {
+            throw new InvalidArgumentException('Only valid bcrypt password hashes or pending invitation tokens may be stored.');
+        }
+
         $pdo = get_db_connection();
         $sql = 'INSERT INTO users (full_name, email, phone_number, password_hash, role, account_status, created_at, updated_at)
                 VALUES (:full_name, :email, :phone_number, :password_hash, :role, :account_status, NOW(), NOW())';
@@ -18,7 +23,7 @@ class User
             ':full_name' => $data['full_name'],
             ':email' => strtolower(trim($data['email'])),
             ':phone_number' => $data['phone_number'] ?? null,
-            ':password_hash' => $data['password_hash'],
+            ':password_hash' => $passwordHash,
             ':role' => $data['role'] ?? ROLE_CUSTOMER,
             ':account_status' => $data['account_status'] ?? 'Active',
         ]);
@@ -91,6 +96,10 @@ class User
 
     public static function activateAccount(int $userId, string $passwordHash): bool
     {
+        if (!preg_match('/^\$2[ayb]\$\d{2}\$[\/A-Za-z0-9.]{53}$/', $passwordHash)) {
+            throw new InvalidArgumentException('Only valid bcrypt password hashes may be stored.');
+        }
+
         $pdo = get_db_connection();
         $sql = "UPDATE users SET password_hash = :password_hash, account_status = 'Active', updated_at = NOW() WHERE user_id = :user_id";
         $stmt = $pdo->prepare($sql);

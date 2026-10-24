@@ -124,7 +124,7 @@ $venues = $venues ?? [];
                                     <dd id="total-charge">-</dd>
                                 </div>
                             </dl>
-                            <p id="availability-message">Select a venue, date, start time, and end time.</p>
+                            <p id="availability-message"><i class="fi fi-sr-info" aria-hidden="true"></i> Select a venue, date, start time, and end time.</p>
                         </div>
                     </aside>
                 </div>
@@ -153,25 +153,34 @@ $venues = $venues ?? [];
                         </thead>
                         <tbody>
                             <?php if (empty($bookings)): ?>
-                                <tr><td colspan="8">You have not submitted any booking requests yet.</td></tr>
+                                <tr>
+                                    <td colspan="8" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon"><i class="fi fi-sr-calendar-clock" aria-hidden="true"></i></span>
+                                            <h3>No bookings yet</h3>
+                                            <p>You have not submitted any venue booking requests. Choose a venue to get started.</p>
+                                            <a href="#request" class="button primary small-button tab-link" data-target="request">Request a booking</a>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($bookings as $booking): ?>
                                     <tr>
-                                        <td><strong><?php echo e($booking['booking_reference']); ?></strong></td>
-                                        <td><?php echo e($booking['venue_name'] ?? '-'); ?></td>
-                                        <td><?php echo e(format_date((string) $booking['booking_date'])); ?></td>
-                                        <td><?php echo e($booking['start_time'] . ' - ' . $booking['end_time']); ?></td>
-                                        <td class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
-                                        <td><?php echo status_badge($booking['booking_status']); ?></td>
-                                        <td><?php echo status_badge($booking['payment_status'] ?? null, 'Not submitted'); ?></td>
-                                        <td>
+                                        <td data-label="Reference"><strong><?php echo e($booking['booking_reference']); ?></strong></td>
+                                        <td data-label="Venue"><?php echo e($booking['venue_name'] ?? '-'); ?></td>
+                                        <td data-label="Date"><?php echo e(format_date((string) $booking['booking_date'])); ?></td>
+                                        <td data-label="Time"><?php echo e($booking['start_time'] . ' - ' . $booking['end_time']); ?></td>
+                                        <td data-label="Charge" class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
+                                        <td data-label="Status"><?php echo status_badge($booking['booking_status']); ?></td>
+                                        <td data-label="Payment status"><?php echo status_badge($booking['payment_status'] ?? null, 'Not submitted'); ?></td>
+                                        <td data-label="Action">
                                             <a class="button ghost small-button" href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id']); ?>">Details</a>
                                             <?php
-                                            $paymentStatus = $booking['payment_status'] ?? null;
-                                            $canCancel = $booking['booking_status'] === BOOKING_STATUS_PENDING
-                                                || ($booking['booking_status'] === BOOKING_STATUS_APPROVED
-                                                    && !in_array($paymentStatus, [PAYMENT_STATUS_PENDING_VERIFICATION, PAYMENT_STATUS_VERIFIED], true));
-                                            ?>
+                                             $paymentStatus = $booking['payment_status'] ?? null;
+                                             $canCancel = $booking['booking_status'] === BOOKING_STATUS_PENDING
+                                                 || ($booking['booking_status'] === BOOKING_STATUS_APPROVED
+                                                     && !in_array($paymentStatus, [PAYMENT_STATUS_PENDING_VERIFICATION, PAYMENT_STATUS_VERIFIED], true));
+                                             ?>
                                             <?php if ($canCancel): ?>
                                                 <form method="post" action="<?php echo e(BASE_URL . '/?r=booking/cancel'); ?>" class="inline-form" data-confirm-title="Cancel booking" data-confirm="Are you sure you want to cancel booking <?php echo e($booking['booking_reference']); ?>?">
                                                     <?php echo csrf_field(); ?>

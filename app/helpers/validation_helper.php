@@ -48,3 +48,13 @@ function validate_password(string $password): array
 
     return $errors;
 }
+
+function hash_password_bcrypt(string $password): string
+{
+    return password_hash($password, PASSWORD_BCRYPT);
+}
+
+function is_bcrypt_hash(string $hash): bool
+{
+    return preg_match('/^\$2[ayb]\$\d{2}\$[\/A-Za-z0-9.]{53}$/', $hash) === 1;
+}

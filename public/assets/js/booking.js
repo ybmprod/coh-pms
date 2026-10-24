@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!el) return;
             el.classList.toggle('skeleton', isLoading);
             if (isLoading) {
-                el.textContent = 'US$ 000.00';
+                el.textContent = 'US$ 00.00';
             }
         });
     }
@@ -49,12 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (fields.some((field) => !field || !field.value)) {
             setLoadingState(false);
-            message.textContent = 'Select a venue, date, start time, and end time.';
+            message.innerHTML = '<i class="fi fi-sr-info" aria-hidden="true"></i> Select a venue, date, start time, and end time.';
             result.classList.remove('flash-success', 'flash-error');
             standardCharge.textContent = '-';
             ruleName.textContent = '-';
             adjustment.textContent = '-';
             totalCharge.textContent = '-';
+            return;
+        }
+
+        if (start && end && start.value && end.value && end.value <= start.value) {
+            setLoadingState(false);
+            end.setAttribute('aria-invalid', 'true');
+            result.classList.remove('flash-success');
+            result.classList.add('flash-error');
+            message.innerHTML = '<span class="status-indicator unavailable"><i class="fi fi-sr-cross-circle" aria-hidden="true"></i> End time must be later than start time.</span>';
+            showPrice({});
             return;
         }
 
@@ -65,29 +75,38 @@ document.addEventListener('DOMContentLoaded', () => {
         endpoint.searchParams.set('start_time', start.value);
         endpoint.searchParams.set('end_time', end.value);
 
-        message.textContent = 'Checking slot availability and pricing rules...';
+        message.innerHTML = '<span class="checking-indicator"><i class="fi fi-sr-spinner spin-anim" aria-hidden="true"></i> Checking availability & pricing...</span>';
         result.classList.remove('flash-success', 'flash-error');
         setLoadingState(true);
 
         try {
-            const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+            const response = await fetch(endpoint, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             const data = await response.json();
             if (currentRequest !== requestNumber) {
                 return;
             }
 
-            message.textContent = data.message || 'Availability could not be checked.';
-            result.classList.toggle('flash-success', data.available === true);
-            result.classList.toggle('flash-error', data.available !== true);
-            if (data.available !== true && end && start && end.value <= start.value) {
-                end.setAttribute('aria-invalid', 'true');
+            const isAvailable = data.available === true;
+            result.classList.toggle('flash-success', isAvailable);
+            result.classList.toggle('flash-error', !isAvailable);
+
+            if (isAvailable) {
+                message.innerHTML = `<span class="status-indicator available"><i class="fi fi-sr-check-circle" aria-hidden="true"></i> ${data.message || 'Slot is available!'}</span>`;
+            } else {
+                message.innerHTML = `<span class="status-indicator unavailable"><i class="fi fi-sr-cross-circle" aria-hidden="true"></i> ${data.message || 'Selected slot is unavailable.'}</span>`;
             }
+
             showPrice(data);
         } catch (error) {
             if (currentRequest !== requestNumber) {
                 return;
             }
-            message.textContent = 'Availability could not be checked. Please try again.';
+            message.innerHTML = '<span class="status-indicator unavailable"><i class="fi fi-sr-cross-circle" aria-hidden="true"></i> Could not check availability. Please try again.</span>';
             result.classList.remove('flash-success');
             result.classList.add('flash-error');
             showPrice({});

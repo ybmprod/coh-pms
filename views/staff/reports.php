@@ -36,7 +36,7 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <p>Filter booking records, evaluate facility utilization, and export verified revenue reports to CSV.</p>
             </header>
 
-            <details class="card">
+            <details class="card no-print">
                 <summary style="font-size: var(--text-lg); font-weight: 600; color: var(--primary-dark); cursor: pointer;">Report Filters</summary>
                 <div style="margin-top: 18px;">
                     <form method="get" action="<?php echo e(BASE_URL . '/?r=report/index'); ?>" class="stacked-form">
@@ -117,6 +117,10 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <section class="card" style="margin-top: 24px;" aria-labelledby="bookings-by-status-heading">
                     <header class="section-heading">
                         <h2 id="bookings-by-status-heading">Bookings by status</h2>
+                        <button type="button" class="button ghost small-button no-print" onclick="window.print()">
+                            <i class="fi fi-sr-print" aria-hidden="true"></i>
+                            <span>Print summary</span>
+                        </button>
                     </header>
                     <ul class="summary-status-list">
                         <?php foreach ($summary['bookings_by_status'] as $status => $count): ?>
@@ -132,7 +136,13 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <article class="card">
                     <header class="section-heading">
                         <h2 id="booking-report-heading">Booking report</h2>
-                        <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=bookings' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        <div class="button-row no-print">
+                            <button type="button" class="button ghost small-button" onclick="window.print()">
+                                <i class="fi fi-sr-print" aria-hidden="true"></i>
+                                <span>Print report</span>
+                            </button>
+                            <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=bookings' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        </div>
                     </header>
                     <table class="data-table">
                         <thead>
@@ -147,16 +157,24 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         </thead>
                         <tbody>
                             <?php if ($bookingReport['rows'] === []): ?>
-                                <tr><td colspan="6">No booking records found.</td></tr>
+                                <tr>
+                                    <td colspan="6" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon"><i class="fi fi-sr-calendar" aria-hidden="true"></i></span>
+                                            <h3>No booking records found</h3>
+                                            <p>No bookings match the selected filter criteria.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($bookingReport['rows'] as $row): ?>
                                     <tr>
-                                        <td><strong><?php echo e($row['booking_reference'] ?? '-'); ?></strong></td>
-                                        <td><?php echo e($row['customer_name'] ?? '-'); ?></td>
-                                        <td><?php echo e($row['venue_name'] ?? '-'); ?></td>
-                                        <td><?php echo e(format_date((string) ($row['booking_date'] ?? ''))); ?></td>
-                                        <td><?php echo status_badge($row['booking_status'] ?? null); ?></td>
-                                        <td class="money"><?php echo e(money_format_usd((float) ($row['total_charge'] ?? 0))); ?></td>
+                                        <td data-label="Reference"><strong><?php echo e($row['booking_reference'] ?? '-'); ?></strong></td>
+                                        <td data-label="Customer"><?php echo e($row['customer_name'] ?? '-'); ?></td>
+                                        <td data-label="Venue"><?php echo e($row['venue_name'] ?? '-'); ?></td>
+                                        <td data-label="Date"><?php echo e(format_date((string) ($row['booking_date'] ?? ''))); ?></td>
+                                        <td data-label="Status"><?php echo status_badge($row['booking_status'] ?? null); ?></td>
+                                        <td data-label="Total charge" class="money"><?php echo e(money_format_usd((float) ($row['total_charge'] ?? 0))); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -177,7 +195,13 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <article class="card">
                     <header class="section-heading">
                         <h2 id="usage-report-heading">Venue usage</h2>
-                        <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=usage' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        <div class="button-row no-print">
+                            <button type="button" class="button ghost small-button" onclick="window.print()">
+                                <i class="fi fi-sr-print" aria-hidden="true"></i>
+                                <span>Print report</span>
+                            </button>
+                            <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=usage' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        </div>
                     </header>
                     <p>Usage assumes 12 available hours per venue per day, using the selected dates, or the first to last booking date when no dates are selected.</p>
                     <table class="data-table">
@@ -193,16 +217,24 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         </thead>
                         <tbody>
                             <?php if ($usageReport['rows'] === []): ?>
-                                <tr><td colspan="6">No venues found.</td></tr>
+                                <tr>
+                                    <td colspan="6" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon"><i class="fi fi-sr-clock" aria-hidden="true"></i></span>
+                                            <h3>No venues found</h3>
+                                            <p>No venue usage data matches the selected filters.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($usageReport['rows'] as $row): ?>
                                     <tr>
-                                        <td><strong><?php echo e($row['venue_name'] ?? '-'); ?></strong></td>
-                                        <td><?php echo e($row['venue_type'] ?? '-'); ?></td>
-                                        <td><?php echo e((string) ($row['booking_count'] ?? 0)); ?></td>
-                                        <td><?php echo e((string) ($row['total_hours'] ?? 0)); ?></td>
-                                        <td><?php echo e((string) ($row['available_hours'] ?? 0)); ?></td>
-                                        <td><strong><?php echo e((string) ($row['usage_percentage'] ?? 0)); ?>%</strong></td>
+                                        <td data-label="Venue"><strong><?php echo e($row['venue_name'] ?? '-'); ?></strong></td>
+                                        <td data-label="Type"><?php echo e($row['venue_type'] ?? '-'); ?></td>
+                                        <td data-label="Bookings"><?php echo e((string) ($row['booking_count'] ?? 0)); ?></td>
+                                        <td data-label="Total hours"><?php echo e((string) ($row['total_hours'] ?? 0)); ?></td>
+                                        <td data-label="Available hours"><?php echo e((string) ($row['available_hours'] ?? 0)); ?></td>
+                                        <td data-label="Usage %"><strong><?php echo e((string) ($row['usage_percentage'] ?? 0)); ?>%</strong></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -226,7 +258,13 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <article class="card">
                     <header class="section-heading">
                         <h2 id="payment-report-heading">Payment report</h2>
-                        <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=payments' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        <div class="button-row no-print">
+                            <button type="button" class="button ghost small-button" onclick="window.print()">
+                                <i class="fi fi-sr-print" aria-hidden="true"></i>
+                                <span>Print report</span>
+                            </button>
+                            <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=payments' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        </div>
                     </header>
                     <p>Payment report date filters use the payment submission date.</p>
                     <table class="data-table">
@@ -242,16 +280,24 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         </thead>
                         <tbody>
                             <?php if ($paymentReport['rows'] === []): ?>
-                                <tr><td colspan="6">No payment records found.</td></tr>
+                                <tr>
+                                    <td colspan="6" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon"><i class="fi fi-sr-credit-card" aria-hidden="true"></i></span>
+                                            <h3>No payment records found</h3>
+                                            <p>No payments match the selected date or status filters.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($paymentReport['rows'] as $row): ?>
                                     <tr>
-                                        <td><strong><?php echo e($row['booking_reference'] ?? '-'); ?></strong></td>
-                                        <td><?php echo e($row['customer_name'] ?? '-'); ?></td>
-                                        <td><?php echo e($row['venue_name'] ?? '-'); ?></td>
-                                        <td class="money"><?php echo e(money_format_usd((float) ($row['amount_paid'] ?? 0))); ?></td>
-                                        <td><?php echo e($row['payment_method'] ?? '-'); ?></td>
-                                        <td><?php echo status_badge($row['payment_status'] ?? null); ?></td>
+                                        <td data-label="Booking"><strong><?php echo e($row['booking_reference'] ?? '-'); ?></strong></td>
+                                        <td data-label="Customer"><?php echo e($row['customer_name'] ?? '-'); ?></td>
+                                        <td data-label="Venue"><?php echo e($row['venue_name'] ?? '-'); ?></td>
+                                        <td data-label="Amount" class="money"><?php echo e(money_format_usd((float) ($row['amount_paid'] ?? 0))); ?></td>
+                                        <td data-label="Method"><?php echo e($row['payment_method'] ?? '-'); ?></td>
+                                        <td data-label="Status"><?php echo status_badge($row['payment_status'] ?? null); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -273,7 +319,13 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                 <article class="card">
                     <header class="section-heading">
                         <h2 id="revenue-report-heading">Revenue report</h2>
-                        <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=revenue' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        <div class="button-row no-print">
+                            <button type="button" class="button ghost small-button" onclick="window.print()">
+                                <i class="fi fi-sr-print" aria-hidden="true"></i>
+                                <span>Print report</span>
+                            </button>
+                            <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=report/exportCsv&type=revenue' . buildReportQueryString($filters)); ?>"><i class="fi fi-sr-download" aria-hidden="true"></i><span>Export CSV</span></a>
+                        </div>
                     </header>
                     <p>Revenue includes Verified payments only; date filters use the verification date.</p>
                     <h3>Verified revenue by venue</h3>
@@ -298,13 +350,21 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         </thead>
                         <tbody>
                             <?php if ($revenueReport['rows'] === []): ?>
-                                <tr><td colspan="3">No verified revenue records found.</td></tr>
+                                <tr>
+                                    <td colspan="3" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon"><i class="fi fi-sr-coins" aria-hidden="true"></i></span>
+                                            <h3>No verified revenue records found</h3>
+                                            <p>No verified revenue transactions exist for this period.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($revenueReport['rows'] as $row): ?>
                                     <tr>
-                                        <td><strong><?php echo e($row['venue_name'] ?? '-'); ?></strong></td>
-                                        <td><?php echo e((string) ($row['payment_count'] ?? 0)); ?></td>
-                                        <td class="money"><?php echo e(money_format_usd((float) ($row['total_amount'] ?? 0))); ?></td>
+                                        <td data-label="Venue"><strong><?php echo e($row['venue_name'] ?? '-'); ?></strong></td>
+                                        <td data-label="Payments"><?php echo e((string) ($row['payment_count'] ?? 0)); ?></td>
+                                        <td data-label="Total" class="money"><?php echo e(money_format_usd((float) ($row['total_amount'] ?? 0))); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -322,13 +382,19 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         <thead><tr><th>Month</th><th>Payments</th><th class="money">Total verified revenue</th></tr></thead>
                         <tbody>
                             <?php if ($revenueReport['by_month'] === []): ?>
-                                <tr><td colspan="3">No monthly revenue records found.</td></tr>
+                                <tr>
+                                    <td colspan="3" class="empty-state-cell">
+                                        <div class="empty-state">
+                                            <p>No monthly revenue records found.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($revenueReport['by_month'] as $month): ?>
                                     <tr>
-                                        <td><strong><?php echo e($month['revenue_month']); ?></strong></td>
-                                        <td><?php echo e((string) $month['payment_count']); ?></td>
-                                        <td class="money"><?php echo e(money_format_usd((float) $month['total_amount'])); ?></td>
+                                        <td data-label="Month"><strong><?php echo e($month['revenue_month']); ?></strong></td>
+                                        <td data-label="Payments"><?php echo e((string) $month['payment_count']); ?></td>
+                                        <td data-label="Total verified revenue" class="money"><?php echo e(money_format_usd((float) $month['total_amount'])); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

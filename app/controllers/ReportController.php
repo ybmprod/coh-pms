@@ -7,19 +7,19 @@ class ReportController extends Controller
     public function index(): void
     {
         $allowedRoles = [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT];
-        if ($this->denyIfNotRole($allowedRoles)) {
+        if ($this->denyIfNotRole($allowedRoles, 'staff')) {
             return;
         }
 
         $filters = $this->validatedFilters($_GET);
-        $user = current_user();
-        $allowedReports = $this->reportsForRole((string) $user['role']);
+        $user = current_staff_user();
+        $allowedReports = $this->reportsForRole((string) ($user['role'] ?? ''));
         $reportService = new ReportService();
         $bookingReport = in_array('bookings', $allowedReports, true) ? $reportService->getBookingReport($filters) : ['rows' => [], 'totals' => []];
         $usageReport = in_array('usage', $allowedReports, true) ? $reportService->getUsageReport($filters) : ['rows' => [], 'totals' => [], 'range_days' => 0];
         $paymentReport = in_array('payments', $allowedReports, true) ? $reportService->getPaymentReport($filters) : ['rows' => [], 'totals' => []];
         $revenueReport = in_array('revenue', $allowedReports, true) ? $reportService->getRevenueReport($filters) : ['rows' => [], 'by_month' => [], 'totals' => []];
-        $canViewAllReports = in_array($user['role'], [ROLE_ADMINISTRATOR, ROLE_COUNCIL_MANAGEMENT], true);
+        $canViewAllReports = in_array($user['role'] ?? '', [ROLE_ADMINISTRATOR, ROLE_COUNCIL_MANAGEMENT], true);
 
         $this->render('staff/reports', [
             'pageTitle' => 'Reports',
@@ -39,12 +39,13 @@ class ReportController extends Controller
     public function exportCsv(): void
     {
         $allowedRoles = [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT];
-        if ($this->denyIfNotRole($allowedRoles)) {
+        if ($this->denyIfNotRole($allowedRoles, 'staff')) {
             return;
         }
 
         $type = trim((string) ($_GET['type'] ?? 'bookings'));
-        $allowedReports = $this->reportsForRole((string) current_user()['role']);
+        $user = current_staff_user();
+        $allowedReports = $this->reportsForRole((string) ($user['role'] ?? ''));
         if (!in_array($type, $allowedReports, true)) {
             http_response_code(403);
             $this->render('errors/403', ['pageTitle' => 'Forbidden']);

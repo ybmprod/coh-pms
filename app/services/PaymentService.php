@@ -43,6 +43,16 @@ class PaymentService
             ], $pdo);
             $pdo->commit();
 
+            if (function_exists('audit_log')) {
+                audit_log('payment.submit', [
+                    'payment_id' => $paymentId,
+                    'booking_id' => $bookingId,
+                    'customer_id' => $customerId,
+                    'amount_paid' => (float) $booking['total_charge'],
+                    'payment_method' => $method,
+                ]);
+            }
+
             return $paymentId;
         } catch (Throwable $exception) {
             if ($pdo->inTransaction()) {
@@ -104,6 +114,16 @@ class PaymentService
             }
 
             $pdo->commit();
+
+            if (function_exists('audit_log')) {
+                audit_log('payment.verification', [
+                    'payment_id' => $paymentId,
+                    'booking_id' => (int) $booking['booking_id'],
+                    'status' => $status,
+                    'actor_id' => $actorId,
+                    'actor_role' => $actorRole,
+                ]);
+            }
         } catch (Throwable $exception) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

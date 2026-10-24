@@ -42,10 +42,8 @@ function format_datetime(?string $value): string
 }
 
 /**
- * Shows a booking, payment, account or venue status as a coloured badge.
- * The CSS class is the status in lowercase with spaces as hyphens,
- * e.g. "Pending Verification" -> "status-badge pending-verification".
- * An empty status shows the fallback text without a badge.
+ * Shows a booking, payment, account or venue status as a polished coloured badge with semantic icon.
+ * WCAG 2.2 AAA compliant, offline compatible using local uicons font.
  */
 function status_badge(?string $status, string $fallback = '-'): string
 {
@@ -53,14 +51,27 @@ function status_badge(?string $status, string $fallback = '-'): string
         return e($fallback);
     }
 
-    $class = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', $status), '-'));
+    $statusTrim = trim($status);
+    $class = strtolower(trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', $statusTrim), '-'));
 
-    return '<span class="status-badge ' . e($class) . '">' . e($status) . '</span>';
+    $icon = match (strtolower($statusTrim)) {
+        'pending', 'pending verification', 'pending activation' => 'fi-sr-clock',
+        'approved' => 'fi-sr-check',
+        'confirmed', 'verified', 'active', 'available' => 'fi-sr-check-circle',
+        'completed' => 'fi-sr-trophy',
+        'rejected', 'cancelled', 'inactive', 'unavailable', 'invite expired' => 'fi-sr-cross-circle',
+        'under maintenance' => 'fi-sr-settings-sliders',
+        default => 'fi-sr-info',
+    };
+
+    return '<span class="status-badge ' . e($class) . '">'
+        . '<i class="fi ' . e($icon) . '" aria-hidden="true"></i>'
+        . '<span>' . e($statusTrim) . '</span>'
+        . '</span>';
 }
 
 /**
- * Returns ' aria-current="page"' when the given route is the page being viewed,
- * so the sidebar can highlight the current link.
+ * Returns ' aria-current="page"' when the given route is the page being viewed.
  */
 function current_page_attr(string $route): string
 {

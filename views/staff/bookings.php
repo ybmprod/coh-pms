@@ -57,19 +57,27 @@ $actionLabels = [
                     </thead>
                     <tbody>
                         <?php if (empty($bookings)): ?>
-                            <tr><td colspan="<?php echo $canReviewBookings ? '8' : '7'; ?>">No bookings found.</td></tr>
+                            <tr>
+                                <td colspan="<?php echo $canReviewBookings ? '8' : '7'; ?>" class="empty-state-cell">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="fi fi-sr-calendar-check" aria-hidden="true"></i></span>
+                                        <h3>No bookings found</h3>
+                                        <p>There are no customer booking requests to display in this queue.</p>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($bookings as $booking): ?>
                                 <tr>
-                                    <td><a href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id'] . '&portal=staff'); ?>"><strong><?php echo e($booking['booking_reference']); ?></strong></a></td>
-                                    <td><?php echo e($booking['customer_name'] ?? '-'); ?></td>
-                                    <td><?php echo e($booking['venue_name'] ?? '-'); ?></td>
-                                    <td><?php echo e(format_date((string) $booking['booking_date']) . ' ' . $booking['start_time'] . '-' . $booking['end_time']); ?></td>
-                                    <td class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
-                                    <td><?php echo status_badge($booking['booking_status']); ?></td>
-                                    <td><?php echo e($booking['reviewer_name'] ?? '-'); ?></td>
+                                    <td data-label="Reference"><a href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id'] . '&portal=staff'); ?>"><strong><?php echo e($booking['booking_reference']); ?></strong></a></td>
+                                    <td data-label="Customer"><?php echo e($booking['customer_name'] ?? '-'); ?></td>
+                                    <td data-label="Venue"><?php echo e($booking['venue_name'] ?? '-'); ?></td>
+                                    <td data-label="Date"><?php echo e(format_date((string) $booking['booking_date']) . ' ' . $booking['start_time'] . '-' . $booking['end_time']); ?></td>
+                                    <td data-label="Charge" class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
+                                    <td data-label="Status"><?php echo status_badge($booking['booking_status']); ?></td>
+                                    <td data-label="Reviewed by"><?php echo e($booking['reviewer_name'] ?? '-'); ?></td>
                                     <?php if ($canReviewBookings): ?>
-                                        <td>
+                                        <td data-label="Action">
                                             <?php foreach ($bookingActions[(int) $booking['booking_id']] ?? [] as $nextStatus): ?>
                                                 <?php
                                                 $isDestructive = in_array($nextStatus, [BOOKING_STATUS_REJECTED, BOOKING_STATUS_CANCELLED], true);

@@ -8,6 +8,9 @@
 
 # Logs and Caches
 *.log
+storage/logs/*.log
+storage/logs/rate_limits.json
+!storage/logs/.gitkeep
 cache/
 tmp/
 temp/

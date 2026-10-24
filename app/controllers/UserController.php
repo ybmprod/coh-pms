@@ -6,7 +6,7 @@ class UserController extends Controller
 {
     public function index(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -23,7 +23,7 @@ class UserController extends Controller
 
     public function create(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -82,7 +82,7 @@ class UserController extends Controller
                 $plainToken = bin2hex(random_bytes(32));
                 $encodedInvite = User::encodeInvitationHash($plainToken);
 
-                User::create([
+                $newUserId = User::create([
                     'full_name' => $fullName,
                     'email' => $email,
                     'phone_number' => $phoneNumber !== '' ? $phoneNumber : null,
@@ -101,18 +101,34 @@ class UserController extends Controller
                     'activation_url' => $activationUrl,
                 ];
 
+                if (function_exists('audit_log')) {
+                    audit_log('user.provision_invite', [
+                        'new_user_id' => $newUserId,
+                        'email' => $email,
+                        'role' => $role,
+                    ]);
+                }
+
                 set_flash('success', 'Staff profile created in Pending Activation state. A 24-hour onboarding activation link has been generated.');
                 $this->redirect(BASE_URL . '/?r=user/index#staff');
             }
 
-            User::create([
+            $newUserId = User::create([
                 'full_name' => $fullName,
                 'email' => $email,
                 'phone_number' => $phoneNumber !== '' ? $phoneNumber : null,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'password_hash' => password_hash($password, PASSWORD_BCRYPT),
                 'role' => $role,
                 'account_status' => 'Active',
             ]);
+
+            if (function_exists('audit_log')) {
+                audit_log('user.create_direct', [
+                    'new_user_id' => $newUserId,
+                    'email' => $email,
+                    'role' => $role,
+                ]);
+            }
 
             set_flash('success', 'Staff account created successfully.');
             $this->redirect(BASE_URL . '/?r=user/index#staff');
@@ -123,7 +139,7 @@ class UserController extends Controller
 
     public function resendInvite(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -160,13 +176,21 @@ class UserController extends Controller
             'activation_url' => $activationUrl,
         ];
 
+        if (function_exists('audit_log')) {
+            audit_log('user.invite_resent', [
+                'target_user_id' => $userId,
+                'email' => $user['email'],
+                'role' => $user['role'],
+            ]);
+        }
+
         set_flash('success', 'A new 24-hour invitation link has been issued for ' . $user['full_name'] . '.');
         $this->redirect(BASE_URL . '/?r=user/index#staff');
     }
 
     public function toggleStatus(): void
     {
-        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR])) {
+        if ($this->denyIfNotRole([ROLE_ADMINISTRATOR], 'staff')) {
             return;
         }
 
@@ -194,7 +218,8 @@ class UserController extends Controller
             $this->redirect(BASE_URL . '/?r=user/index#staff');
         }
 
-        if ($userId === (int) current_user()['id']) {
+        $currentUser = current_staff_user();
+        if ($userId === (int) ($currentUser['id'] ?? 0)) {
             set_flash('error', 'You cannot deactivate your own account.');
             $this->redirect(BASE_URL . '/?r=user/index');
         }
@@ -205,6 +230,16 @@ class UserController extends Controller
             $this->redirect(BASE_URL . '/?r=user/index');
         }
         User::updateStatus($userId, $nextStatus);
+
+        if (function_exists('audit_log')) {
+            audit_log('user.status_toggle', [
+                'target_user_id' => $userId,
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'previous_status' => $user['account_status'],
+                'new_status' => $nextStatus,
+            ]);
+        }
 
         set_flash('success', 'User account status updated to ' . $nextStatus . '.');
         $this->redirect(BASE_URL . '/?r=user/index');
