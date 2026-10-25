@@ -3,16 +3,16 @@ declare(strict_types=1);
 
 define('SESSION_TIMEOUT', 3600); // 60 minutes reasonable idle session timeout
 
+$isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+    || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443
+    || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_name('coh_pms_session');
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_httponly', '1');
     ini_set('session.gc_maxlifetime', (string) SESSION_TIMEOUT);
-
-    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
-        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443
-        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 
     session_set_cookie_params([
         'lifetime' => SESSION_TIMEOUT,
@@ -36,7 +36,20 @@ date_default_timezone_set('Africa/Harare');
 
 define('APP_NAME', 'City of Harare Property Management System');
 define('APP_ENV', 'development');
-define('BASE_URL', getenv('COH_PMS_BASE_URL') ?: 'http://localhost/coh-pms/public');
+
+if (!defined('BASE_URL')) {
+    if ($envBaseUrl = getenv('COH_PMS_BASE_URL')) {
+        define('BASE_URL', rtrim($envBaseUrl, '/'));
+    } elseif (PHP_SAPI === 'cli' || empty($_SERVER['HTTP_HOST'])) {
+        define('BASE_URL', 'http://localhost/coh-pms/public');
+    } else {
+        $scheme = $isHttps ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'];
+        $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $baseUrl = rtrim($scheme . $host . $scriptDir, '/');
+        define('BASE_URL', $baseUrl !== '' ? $baseUrl : $scheme . $host);
+    }
+}
 define('APP_ROOT', dirname(__DIR__));
 define('APP_PUBLIC_PATH', APP_ROOT . '/public');
 define('APP_VIEW_PATH', APP_ROOT . '/views');
