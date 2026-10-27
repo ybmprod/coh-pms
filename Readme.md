@@ -181,5 +181,3 @@ Customer selects venue, date, times
                              └─[Event date passes]
                                  └── Mark Completed ==> Status: Completed
 ```
-
-[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/ybmprod/coh-pms?utm_source=readme&utm_medium=badge)
