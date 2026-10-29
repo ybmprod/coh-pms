@@ -22,8 +22,11 @@ class AvailabilityService
         if (!$this->isTime($start) || !$this->isTime($end)) {
             return ['available' => false, 'message' => 'Start and end times must use the HH:MM format.'];
         }
-        if ($end <= $start) {
-            return ['available' => false, 'message' => 'End time must be later than start time.'];
+        if (!$this->isValidTimeOrder($start, $end)) {
+            return [
+                'available' => false,
+                'message' => 'End time must be later than start time. Overnight bookings are only allowed from evening (18:00 / 6:00 PM) into the next morning (up to 09:00 / 9:00 AM).',
+            ];
         }
 
         $forUpdate = $pdo !== null && $pdo->inTransaction();
@@ -45,5 +48,18 @@ class AvailabilityService
     private function isTime(string $time): bool
     {
         return preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $time) === 1;
+    }
+
+    private function isValidTimeOrder(string $start, string $end): bool
+    {
+        if ($end > $start) {
+            return true;
+        }
+        if ($end === $start) {
+            return false;
+        }
+
+        // Cross-midnight overnight booking: evening PM (>= 18:00) to next morning AM (<= 09:00)
+        return $start >= '18:00' && $end <= '09:00';
     }
 }

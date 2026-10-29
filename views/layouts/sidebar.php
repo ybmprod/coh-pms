@@ -18,6 +18,7 @@ $canViewStaffArea = $isStaffPortal && in_array(
 );
 
 $venueExpanded = str_contains(current_page_attr('venue/index'), 'page');
+$eventTypeExpanded = str_contains(current_page_attr('eventtype/index'), 'page');
 $pricingExpanded = str_contains(current_page_attr('pricingrule/index'), 'page');
 $bookingExpanded = str_contains(current_page_attr('booking/index'), 'page');
 $userExpanded = str_contains(current_page_attr('user/index'), 'page');
@@ -61,6 +62,19 @@ $dashboardRoute = $isStaffPortal ? 'dashboard/index' : 'dashboard/customer';
                         <div class="accordion-content">
                             <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-plus" aria-hidden="true"></i>Add rule</a>
                             <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#list'); ?>" class="tab-link" data-target="list"><i class="fi fi-sr-settings-sliders" aria-hidden="true"></i>View rules</a>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdministrator || $isBookingOfficer): ?>
+                    <li class="accordion-item <?php echo $eventTypeExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $eventTypeExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-calendar-star nav-icon" aria-hidden="true"></i>Event types</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=eventtype/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-plus" aria-hidden="true"></i>Add event type</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=eventtype/index#list'); ?>" class="tab-link" data-target="list"><i class="fi fi-sr-list" aria-hidden="true"></i>View event types</a>
                         </div>
                     </li>
                 <?php endif; ?>
@@ -208,9 +222,21 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isMatch) matched = true;
         });
 
+        // Only highlight sidebar links that point to THIS page's route. Several
+        // sections share generic hashes (#add, #list), so matching on the hash
+        // alone would light up links belonging to other modules.
+        const currentRoute = new URLSearchParams(window.location.search).get('r') || '';
         document.querySelectorAll('.accordion-content a, .tab-link').forEach(function (link) {
-            const linkHash = link.getAttribute('href')?.split('#')[1] || '';
-            link.classList.toggle('is-active-tab', linkHash === targetId);
+            const href = link.getAttribute('href') || '';
+            const linkHash = href.split('#')[1] || '';
+            let linkRoute = '';
+            try {
+                linkRoute = new URL(href, window.location.href).searchParams.get('r') || '';
+            } catch (e) {
+                linkRoute = '';
+            }
+            const sameRoute = linkRoute.toLowerCase() === currentRoute.toLowerCase();
+            link.classList.toggle('is-active-tab', sameRoute && linkHash === targetId);
         });
 
         if (!matched && sections.length) {

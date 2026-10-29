@@ -72,7 +72,7 @@ $actionLabels = [
                                     <td data-label="Reference"><a href="<?php echo e(BASE_URL . '/?r=booking/details&id=' . (int) $booking['booking_id'] . '&portal=staff'); ?>"><strong><?php echo e($booking['booking_reference']); ?></strong></a></td>
                                     <td data-label="Customer"><?php echo e($booking['customer_name'] ?? '-'); ?></td>
                                     <td data-label="Venue"><?php echo e($booking['venue_name'] ?? '-'); ?></td>
-                                    <td data-label="Date"><?php echo e(format_date((string) $booking['booking_date']) . ' ' . $booking['start_time'] . '-' . $booking['end_time']); ?></td>
+                                    <td data-label="Date"><?php echo e(format_date((string) $booking['booking_date']) . ' • ' . format_booking_time_range((string) $booking['start_time'], (string) $booking['end_time'])); ?></td>
                                     <td data-label="Charge" class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
                                     <td data-label="Status"><?php echo status_badge($booking['booking_status']); ?></td>
                                     <td data-label="Reviewed by"><?php echo e($booking['reviewer_name'] ?? '-'); ?></td>

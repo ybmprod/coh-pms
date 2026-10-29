@@ -22,7 +22,7 @@ $flash = get_flash();
         <section class="card form-card" aria-labelledby="register-heading">
             <header class="form-header">
                 <span class="eyebrow">Customer Registration</span>
-                <h1 id="register-heading">Create customer account</h1>
+                <h1 id="register-heading">Create account</h1>
                 <p>Register to browse venues and submit booking requests.</p>
             </header>
 

@@ -126,4 +126,33 @@ $allPassed = $runCase('Equal priority selects the lower pricing_rule_id', static
     }
 }) && $allPassed;
 
+$allPassed = $runCase('Overnight cross-midnight booking (22:00 to 05:30 = 7.5 hrs) calculates accurately', static function () use ($makeRule, $calculate, $assertTotal): void {
+    $weekday = $makeRule(13, 'Weekday Discount', 'Weekday Discount', 10, 10, 'Mon,Tue,Wed,Thu');
+    $longBooking = $makeRule(14, 'Long Booking Discount', 'Long Booking Discount', 5, 11, null, 8.0);
+    $charge = $calculate('2026-10-05', '22:00', '05:30', [$weekday, $longBooking]);
+    $assertTotal($charge, 90.00);
+    if ($charge['rule_name'] !== 'Weekday Discount') {
+        throw new RuntimeException('Expected Weekday Discount for 7.5-hour overnight booking.');
+    }
+}) && $allPassed;
+
+$allPassed = $runCase('Overnight 8+ hour booking (22:00 to 06:30 = 8.5 hrs) qualifies for Long Booking Discount', static function () use ($makeRule, $calculate, $assertTotal): void {
+    $weekday = $makeRule(15, 'Weekday Discount', 'Weekday Discount', 10, 10, 'Mon,Tue,Wed,Thu');
+    $longBooking = $makeRule(16, 'Long Booking Discount', 'Long Booking Discount', 5, 11, null, 8.0);
+    $charge = $calculate('2026-10-05', '22:00', '06:30', [$weekday, $longBooking]);
+    $assertTotal($charge, 95.00);
+    if ($charge['rule_name'] !== 'Long Booking Discount') {
+        throw new RuntimeException('Expected Long Booking Discount for 8.5-hour overnight booking.');
+    }
+}) && $allPassed;
+
+$allPassed = $runCase('Reversed daytime hours (14:00 to 10:00) are rejected', static function () use ($calculate): void {
+    try {
+        $calculate('2026-10-05', '14:00', '10:00', []);
+    } catch (InvalidArgumentException $e) {
+        return;
+    }
+    throw new RuntimeException('Expected InvalidArgumentException for reversed daytime hours.');
+}) && $allPassed;
+
 exit($allPassed ? 0 : 1);

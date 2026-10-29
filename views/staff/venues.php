@@ -25,7 +25,7 @@ $venues = $venues ?? [];
         <section class="dashboard-main" aria-labelledby="venue-mgmt-title">
             <header class="page-header">
                 <h1 id="venue-mgmt-title">Venue Management</h1>
-                <p>Add and update council venue records, including availability and image upload.</p>
+                <p>Add and update City of Harare council venue records, including availability, standard charges, and imagery.</p>
             </header>
 
             <section id="add" class="card form-card tab-section" data-tab="add" aria-labelledby="add-venue-heading">
@@ -65,7 +65,7 @@ $venues = $venues ?? [];
                         </div>
 
                         <div class="field-group">
-                            <label for="standard_price">Standard price (US$)</label>
+                            <label for="standard_price">Standard charge (US$)</label>
                             <input id="standard_price" name="standard_price" type="number" step="0.01" min="0" required>
                         </div>
 
@@ -134,8 +134,22 @@ $venues = $venues ?? [];
                                         <input type="text" name="venue_name" form="<?php echo e($formId); ?>" aria-label="Venue name" value="<?php echo e($venue['venue_name']); ?>">
                                     </td>
                                     <td data-label="Image">
-                                        <?php if (!empty($venue['image_path'])): ?>
-                                            <img src="<?php echo e(venue_image_url($venue['image_path'])); ?>" alt="<?php echo e($venue['venue_name']); ?>" class="venue-image">
+                                        <?php
+                                        $rawImagePath = (string) ($venue['image_path'] ?? '');
+                                        $filename = basename(str_replace('\\', '/', $rawImagePath));
+                                        $imageExists = $rawImagePath !== '' && is_file(APP_UPLOAD_PATH . DIRECTORY_SEPARATOR . $filename);
+                                        ?>
+                                        <?php if ($imageExists): ?>
+                                            <img src="<?php echo e(venue_image_url($rawImagePath)); ?>" alt="<?php echo e($venue['venue_name']); ?>" class="venue-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="venue-image-broken" style="display: none;" aria-hidden="true">
+                                                <i class="fi fi-sr-picture" aria-hidden="true"></i>
+                                                <span>No preview</span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="venue-image-broken" aria-hidden="true">
+                                                <i class="fi fi-sr-picture" aria-hidden="true"></i>
+                                                <span>No image</span>
+                                            </div>
                                         <?php endif; ?>
                                         <label for="venue-image-<?php echo e((string) $venue['venue_id']); ?>" style="font-size: var(--text-xs); font-weight: 600; display: block; margin-bottom: 4px;">Replace image</label>
                                         <input id="venue-image-<?php echo e((string) $venue['venue_id']); ?>" type="file" name="image" form="<?php echo e($formId); ?>" accept="image/png,image/jpeg,image/webp" style="font-size: var(--text-xs); max-width: 170px;">

@@ -191,14 +191,16 @@ class ReportService
                     $row['booking_reference'],
                     $row['customer_name'] ?? '-',
                     $row['venue_name'] ?? '-',
+                    $row['event_type'] ?? '-',
+                    number_format((float) ($row['event_type_charge'] ?? 0), 2, '.', ''),
                     $row['booking_date'],
                     $row['start_time'],
                     $row['end_time'],
                     $row['booking_status'],
                     number_format((float) $row['total_charge'], 2, '.', ''),
                 ], $report['rows']);
-                $totals = ['TOTAL', '', '', '', '', '', $report['totals']['count'] . ' bookings', number_format($report['totals']['total_charge'], 2, '.', '')];
-                return [['Reference', 'Customer', 'Venue', 'Date', 'Start Time', 'End Time', 'Status', 'Total Charge'], $rows, $totals];
+                $totals = ['TOTAL', '', '', '', '', '', '', '', $report['totals']['count'] . ' bookings', number_format($report['totals']['total_charge'], 2, '.', '')];
+                return [['Reference', 'Customer', 'Venue', 'Event Type', 'Event Charge (US$)', 'Date', 'Start Time', 'End Time', 'Status', 'Total Charge (US$)'], $rows, $totals];
         }
     }
 

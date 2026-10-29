@@ -150,6 +150,8 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                                 <th>Reference</th>
                                 <th>Customer</th>
                                 <th>Venue</th>
+                                <th>Event Type</th>
+                                <th class="money">Event Charge</th>
                                 <th>Date</th>
                                 <th>Status</th>
                                 <th class="money">Total charge</th>
@@ -158,7 +160,7 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         <tbody>
                             <?php if ($bookingReport['rows'] === []): ?>
                                 <tr>
-                                    <td colspan="6" class="empty-state-cell">
+                                    <td colspan="8" class="empty-state-cell">
                                         <div class="empty-state">
                                             <span class="empty-state-icon"><i class="fi fi-sr-calendar" aria-hidden="true"></i></span>
                                             <h3>No booking records found</h3>
@@ -172,6 +174,8 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                                         <td data-label="Reference"><strong><?php echo e($row['booking_reference'] ?? '-'); ?></strong></td>
                                         <td data-label="Customer"><?php echo e($row['customer_name'] ?? '-'); ?></td>
                                         <td data-label="Venue"><?php echo e($row['venue_name'] ?? '-'); ?></td>
+                                        <td data-label="Event Type"><?php echo e($row['event_type'] ?? '-'); ?></td>
+                                        <td data-label="Event Charge" class="money"><?php echo e(money_format_usd((float) ($row['event_type_charge'] ?? 0))); ?></td>
                                         <td data-label="Date"><?php echo e(format_date((string) ($row['booking_date'] ?? ''))); ?></td>
                                         <td data-label="Status"><?php echo status_badge($row['booking_status'] ?? null); ?></td>
                                         <td data-label="Total charge" class="money"><?php echo e(money_format_usd((float) ($row['total_charge'] ?? 0))); ?></td>
@@ -181,7 +185,7 @@ $revenueReport = $revenueReport ?? ['rows' => [], 'by_month' => [], 'totals' => 
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="5">Totals (<?php echo e((string) ($bookingReport['totals']['count'] ?? 0)); ?> bookings)</th>
+                                <th colspan="7">Totals (<?php echo e((string) ($bookingReport['totals']['count'] ?? 0)); ?> bookings)</th>
                                 <th class="money"><?php echo e(money_format_usd((float) ($bookingReport['totals']['total_charge'] ?? 0))); ?></th>
                             </tr>
                         </tfoot>

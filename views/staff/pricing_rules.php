@@ -25,7 +25,7 @@ $pricingRules = $pricingRules ?? [];
         <section class="dashboard-main" aria-labelledby="pricing-rules-title">
             <header class="page-header">
                 <h1 id="pricing-rules-title">Pricing Rules</h1>
-                <p>Manage weekday, weekend, and long-stay pricing adjustments across venues.</p>
+                <p>Manage pricing rules and policy adjustments across council venues.</p>
             </header>
 
             <section id="add" class="card form-card tab-section" data-tab="add" aria-labelledby="add-rule-heading">

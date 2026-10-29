@@ -32,6 +32,19 @@ CREATE TABLE `venues` (
     PRIMARY KEY (`venue_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `event_types` (
+    `event_type_id` INT NOT NULL AUTO_INCREMENT,
+    `event_name` VARCHAR(100) NOT NULL,
+    `charge_type` ENUM('Fixed Amount','Percentage') NOT NULL DEFAULT 'Fixed Amount',
+    `charge_value` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `description` VARCHAR(255) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`event_type_id`),
+    UNIQUE KEY `uq_event_types_name` (`event_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `pricing_rules` (
     `pricing_rule_id` INT NOT NULL AUTO_INCREMENT,
     `rule_name` VARCHAR(100) NOT NULL,
@@ -60,8 +73,9 @@ CREATE TABLE `bookings` (
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
     `event_type` VARCHAR(100) DEFAULT NULL,
-    `number_of_attendees` INT DEFAULT NULL,
+    `expected_attendance` INT DEFAULT NULL,
     `standard_charge` DECIMAL(10,2) NOT NULL,
+    `event_type_charge` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `adjustment_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `total_charge` DECIMAL(10,2) NOT NULL,
     `booking_status` ENUM('Pending','Approved','Rejected','Cancelled','Confirmed','Completed') NOT NULL DEFAULT 'Pending',

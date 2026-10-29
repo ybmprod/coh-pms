@@ -13,7 +13,7 @@ class PricingService
         $this->activeRulesFinder = $activeRulesFinder ?? static fn(): array => PricingRule::getActive();
     }
 
-    public function calculate(int $venueId, string $date, string $start, string $end): array
+    public function calculate(int $venueId, string $date, string $start, string $end, ?string $eventType = null, float $eventTypeCharge = 0.0): array
     {
         $venue = ($this->venueFinder)($venueId);
         if (!$venue) {
@@ -22,12 +22,30 @@ class PricingService
 
         $startMinutes = $this->timeToMinutes($start);
         $endMinutes = $this->timeToMinutes($end);
-        if ($endMinutes <= $startMinutes) {
-            throw new InvalidArgumentException('End time must be later than start time.');
+        if (!$this->isValidBookingWindow($startMinutes, $endMinutes)) {
+            throw new InvalidArgumentException(
+                'End time must be later than start time. Overnight bookings are only allowed from evening (18:00 / 6:00 PM) into the next morning (up to 09:00 / 9:00 AM).'
+            );
         }
 
-        $durationHours = ($endMinutes - $startMinutes) / 60;
+        // Support valid overnight bookings (evening PM -> next morning AM)
+        $durationMinutes = $endMinutes > $startMinutes
+            ? ($endMinutes - $startMinutes)
+            : ((24 * 60 - $startMinutes) + $endMinutes);
+        $durationHours = $durationMinutes / 60;
         $standardCharge = round((float) $venue['standard_price'], 2);
+        // Calculate the event-type charge before applying the pricing-rule adjustment
+        if ($eventTypeCharge === 0.0 && !empty($eventType) && class_exists('EventType')) {
+            $et = EventType::findByName($eventType);
+            if ($et && ($et['status'] ?? 'Active') === 'Active') {
+                if (($et['charge_type'] ?? '') === 'Percentage') {
+                    $eventTypeCharge = round($standardCharge * ((float) $et['charge_value'] / 100), 2);
+                } else {
+                    $eventTypeCharge = round((float) ($et['charge_value'] ?? 0), 2);
+                }
+            }
+        }
+
         $selectedRule = null;
 
         foreach (($this->activeRulesFinder)() as $rule) {
@@ -61,10 +79,11 @@ class PricingService
         $adjustmentAmount = $selectedRule === null
             ? 0.0
             : $this->applyAdjustment($standardCharge, $selectedRule);
-        $totalCharge = max(0.0, $standardCharge + $adjustmentAmount);
+        $totalCharge = max(0.0, $standardCharge + $eventTypeCharge + $adjustmentAmount);
 
         return [
             'standard_charge' => round($standardCharge, 2),
+            'event_type_charge' => round($eventTypeCharge, 2),
             'adjustment_amount' => round($adjustmentAmount, 2),
             'total_charge' => round($totalCharge, 2),
             'pricing_rule_id' => $selectedRule['pricing_rule_id'] ?? null,
@@ -80,6 +99,26 @@ class PricingService
 
         [$hours, $minutes] = array_map('intval', explode(':', $time));
         return ($hours * 60) + $minutes;
+    }
+
+    /**
+     * Validates that the booking time window is either:
+     * 1. A same-day booking where end time is strictly after start time, OR
+     * 2. A genuine overnight booking starting in the evening/night (18:00–23:59)
+     *    and ending the next morning (00:00–09:00).
+     * Reversed daytime hours (e.g. 14:00 to 10:00) are rejected.
+     */
+    public function isValidBookingWindow(int $startMinutes, int $endMinutes): bool
+    {
+        if ($endMinutes > $startMinutes) {
+            return true;
+        }
+        if ($endMinutes === $startMinutes) {
+            return false;
+        }
+
+        // Cross-midnight (end < start): require evening start (>= 18:00) and morning end (<= 09:00)
+        return $startMinutes >= (18 * 60) && $endMinutes <= (9 * 60);
     }
 
     private function ruleMatchesDate(array $rule, string $date): bool

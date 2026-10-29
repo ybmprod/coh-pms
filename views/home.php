@@ -30,7 +30,7 @@ $loggedIn = is_logged_in('customer');
                     <h1 id="hero-heading">Find the right venue for your next event.</h1>
                     <p>
                         Browse community halls, centres, stadiums and open spaces. Check availability,
-                        see the charge before you book, and follow your request through to receipt.
+                        see the configurable charge before you book, and follow your request through to payment verification.
                     </p>
                     <div class="button-row">
                         <?php if ($loggedIn): ?>
@@ -84,15 +84,15 @@ $loggedIn = is_logged_in('customer');
                     <div>
                         <span class="step-number" aria-hidden="true">02</span>
                         <h3>See the price upfront</h3>
-                        <p>Availability and approved pricing rules are checked before you submit.</p>
+                        <p>Availability and applicable pricing rules are checked before you submit.</p>
                     </div>
                 </article>
 
                 <article class="card step-card">
                     <div>
                         <span class="step-number" aria-hidden="true">03</span>
-                        <h3>Pay and receive your receipt</h3>
-                        <p>After approval, submit payment details. Verified payments confirm your booking.</p>
+                        <h3>Pay and receive verification</h3>
+                        <p>After approval, submit payment details to receive your payment verification reference.</p>
                     </div>
                 </article>
             </div>

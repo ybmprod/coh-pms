@@ -29,7 +29,7 @@ $loggedIn = is_logged_in('staff');
                     <span class="hero-eyebrow">City of Harare Property Management System</span>
                     <h1 id="staff-hero-heading">Council Staff Portal</h1>
                     <p>
-                        Welcome to the internal municipal workspace. Manage council venues, review customer booking requests, verify payments, and configure approved tariff rules.
+                        Welcome to the internal municipal workspace. Manage council venues, review customer booking requests, verify payments, and manage pricing rules.
                     </p>
                     <div class="button-row">
                         <?php if ($loggedIn): ?>
@@ -48,8 +48,8 @@ $loggedIn = is_logged_in('staff');
                     <h2>Authorized Divisions</h2>
                     <ul class="hero-aside-list">
                         <li><span>Booking Officers</span><strong>Slot Review</strong></li>
-                        <li><span>Revenue Officers</span><strong>Receipting</strong></li>
-                        <li><span>Administrators</span><strong>Tariff &amp; Staff</strong></li>
+                        <li><span>Revenue Officers</span><strong>Verification</strong></li>
+                        <li><span>Administrators</span><strong>Rules &amp; Staff</strong></li>
                         <li><span>Council Management</span><strong>Audit Reports</strong></li>
                     </ul>
                 </aside>
@@ -85,7 +85,7 @@ $loggedIn = is_logged_in('staff');
                     <div>
                         <span class="step-number" aria-hidden="true">03</span>
                         <h3>Payment Verification</h3>
-                        <p>Verify customer payments and issue official receipts for approved bookings.</p>
+                        <p>Verify customer payments and issue payment verification references for approved bookings.</p>
                     </div>
                 </article>
             </div>

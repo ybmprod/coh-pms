@@ -43,21 +43,27 @@ $receiptUrl = BASE_URL . '/?r=payment/receipt&booking_id=' . (int) ($booking['bo
                     <div><dt>Customer</dt><dd><?php echo e($booking['customer_name'] ?? '-'); ?></dd></div>
                     <div><dt>Venue</dt><dd><?php echo e($booking['venue_name'] ?? '-'); ?></dd></div>
                     <div><dt>Date</dt><dd><?php echo e(format_date((string) $booking['booking_date'])); ?></dd></div>
-                    <div><dt>Time</dt><dd><?php echo e($booking['start_time'] . ' - ' . $booking['end_time']); ?></dd></div>
+                    <div><dt>Time</dt><dd><?php echo e(format_booking_time_range((string) $booking['start_time'], (string) $booking['end_time'])); ?></dd></div>
+                    <?php if (!empty($booking['expected_attendance']) || !empty($booking['number_of_attendees'])): ?>
+                        <div><dt>Expected attendance</dt><dd><?php echo e(number_format((int) ($booking['expected_attendance'] ?? $booking['number_of_attendees']))); ?></dd></div>
+                    <?php endif; ?>
                     <div><dt>Standard charge</dt><dd><?php echo e(money_format_usd((float) $booking['standard_charge'])); ?></dd></div>
-                    <div><dt>Pricing rule</dt><dd><?php echo e($booking['rule_name'] ?? 'No matching rule'); ?></dd></div>
+                    <?php if (isset($booking['event_type_charge']) && (float) $booking['event_type_charge'] > 0): ?>
+                        <div><dt>Event type charge</dt><dd><?php echo e(money_format_usd((float) $booking['event_type_charge'])); ?></dd></div>
+                    <?php endif; ?>
+                    <div><dt>Pricing rule</dt><dd><?php echo e($booking['rule_name'] ?? 'Standard rate applied'); ?></dd></div>
                     <div><dt>Adjustment</dt><dd><?php echo e(money_format_usd((float) $booking['adjustment_amount'])); ?></dd></div>
                     <div><dt>Total charge</dt><dd><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></dd></div>
                     <div><dt>Booking status</dt><dd><?php echo status_badge($booking['booking_status']); ?></dd></div>
                     <div><dt>Payment status</dt><dd><?php echo status_badge($payment['payment_status'] ?? null, 'Not submitted'); ?></dd></div>
-                    <div><dt>Receipt number</dt><dd><?php echo e($payment['receipt_number'] ?? '-'); ?></dd></div>
+                    <div><dt>Payment Verification Reference</dt><dd><?php echo e($payment['receipt_number'] ?? '-'); ?></dd></div>
                 </dl>
 
                 <div class="button-row" style="margin-top: 20px;">
                     <?php if (($payment['payment_status'] ?? '') === PAYMENT_STATUS_VERIFIED): ?>
                         <a class="button primary" href="<?php echo e($receiptUrl); ?>">
                             <i class="fi fi-sr-receipt" aria-hidden="true"></i>
-                            <span>View receipt</span>
+                            <span>View verification</span>
                         </a>
                     <?php endif; ?>
                     <a class="button secondary" href="<?php echo e(BASE_URL . '/?r=' . $backRoute); ?>">

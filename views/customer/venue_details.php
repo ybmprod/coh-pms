@@ -35,10 +35,21 @@ $description = trim((string) ($venue['description'] ?? ''));
                 All venues
             </a>
 
-            <header class="cv-hero<?php echo $imageUrl === '' ? ' cv-hero-noimage' : ''; ?>"
-                <?php if ($imageUrl !== ''): ?>style="background-image: linear-gradient(180deg, rgba(8, 45, 70, 0.12) 0%, rgba(8, 45, 70, 0.42) 45%, rgba(8, 45, 70, 0.94) 100%), url('<?php echo e($imageUrl); ?>');"<?php endif; ?>>
+            <?php
+            $hasImage = $imageUrl !== '';
+            $imageFileExists = false;
+            if ($hasImage && !empty($venue['image_path'])) {
+                $filename = basename(str_replace('\\', '/', (string) $venue['image_path']));
+                $imageFileExists = is_file(APP_UPLOAD_PATH . DIRECTORY_SEPARATOR . $filename);
+            }
+            ?>
+            <header class="cv-hero<?php echo !$imageFileExists ? ' cv-hero-noimage' : ''; ?>"
+                <?php if ($imageFileExists): ?>style="background-image: linear-gradient(180deg, rgba(8, 45, 70, 0.12) 0%, rgba(8, 45, 70, 0.42) 45%, rgba(8, 45, 70, 0.94) 100%), url('<?php echo e($imageUrl); ?>');"<?php endif; ?>>
                 <div class="cv-hero-content">
                     <span class="cv-type-chip cv-type-chip-static"><?php echo e($venue['venue_type'] ?? 'Venue'); ?></span>
+                    <?php if (!$imageFileExists): ?>
+                        <span class="badge" style="background: rgba(255,255,255,0.12); color: #cbd5e1; font-size: 0.72rem; margin-left: 8px; vertical-align: middle; padding: 4px 10px; border-radius: var(--radius-pill);"><i class="fi fi-sr-picture" style="margin-right: 4px;"></i>Preview unavailable</span>
+                    <?php endif; ?>
                     <h1 id="venue-detail-title"><?php echo e($venue['venue_name'] ?? 'Venue'); ?></h1>
                     <p class="cv-hero-location">
                         <i class="fi fi-sr-marker" aria-hidden="true"></i>
@@ -53,7 +64,7 @@ $description = trim((string) ($venue['description'] ?? ''));
                     <dd class="cv-stat-value" style="margin: 4px 0 0;"><?php echo e(number_format((int) ($venue['capacity'] ?? 0))); ?> <small>guests</small></dd>
                 </div>
                 <div class="cv-stat">
-                    <dt class="cv-meta-label">Standard price</dt>
+                    <dt class="cv-meta-label">Standard rate</dt>
                     <dd class="cv-stat-value cv-price" style="margin: 4px 0 0;"><?php echo e(money_format_usd((float) ($venue['standard_price'] ?? 0))); ?></dd>
                 </div>
                 <div class="cv-stat">
@@ -96,9 +107,9 @@ $description = trim((string) ($venue['description'] ?? ''));
 
                 <aside class="card cv-book-card" aria-labelledby="book-venue-heading">
                     <h2 id="book-venue-heading" class="cv-section-title">Book this venue</h2>
-                    <p style="margin: 0 0 6px; color: var(--muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;">Standard charge</p>
+                    <p style="margin: 0 0 6px; color: var(--muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;">Standard rate</p>
                     <p class="cv-book-price"><?php echo e(money_format_usd((float) ($venue['standard_price'] ?? 0))); ?></p>
-                    <p style="margin: 0 0 18px; color: var(--muted); font-size: var(--text-xs);">Final price may change with weekday, weekend or off-peak pricing rules. You will see the exact total before you submit.</p>
+                    <p style="margin: 0 0 18px; color: var(--muted); font-size: var(--text-xs);">Total booking charge = Venue Standard Charge + Event-Type Charge &plusmn; Pricing Rule adjustment. You will see the complete breakdown before submitting.</p>
 
                     <?php if ($isBookable): ?>
                         <a href="<?php echo e(BASE_URL . '/?r=booking/customerList&venue_id=' . (int) ($venue['venue_id'] ?? 0) . '#request'); ?>" class="button primary full-width">
@@ -112,7 +123,7 @@ $description = trim((string) ($venue['description'] ?? ''));
                     <ol class="cv-steps">
                         <li>Choose your date and times</li>
                         <li>Council reviews your request</li>
-                        <li>Pay and receive your receipt</li>
+                        <li>Submit payment details for verification</li>
                     </ol>
                 </aside>
             </div>

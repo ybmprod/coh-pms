@@ -99,7 +99,7 @@ class Payment
     {
         $pdo = get_db_connection();
         $sql = 'SELECT p.*, b.booking_reference, b.customer_id, b.venue_id, b.booking_date,
-                       b.start_time, b.end_time, b.standard_charge, b.adjustment_amount,
+                       b.start_time, b.end_time, b.event_type, b.expected_attendance, b.standard_charge, b.event_type_charge, b.adjustment_amount,
                        b.total_charge, c.full_name AS customer_name, v.venue_name,
                        pr.rule_name, verifier.full_name AS verified_by_name
                 FROM payments p

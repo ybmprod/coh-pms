@@ -41,6 +41,40 @@ function format_datetime(?string $value): string
     return $date->format('d M Y, H:i');
 }
 
+function format_time_meridiem(?string $time): string
+{
+    if (empty($time)) {
+        return '-';
+    }
+
+    $norm = substr(trim($time), 0, 5);
+    if (!preg_match('/^(\d{2}):(\d{2})$/', $norm, $m)) {
+        return $time;
+    }
+
+    $hour = (int) $m[1];
+    $period = $hour >= 12 ? 'PM' : 'AM';
+    return $norm . ' ' . $period;
+}
+
+function format_booking_time_range(?string $startTime, ?string $endTime): string
+{
+    if (empty($startTime) || empty($endTime)) {
+        return '-';
+    }
+
+    $startNorm = substr(trim($startTime), 0, 5);
+    $endNorm = substr(trim($endTime), 0, 5);
+    $startFormatted = format_time_meridiem($startNorm);
+    $endFormatted = format_time_meridiem($endNorm);
+
+    if ($endNorm < $startNorm) {
+        return $startFormatted . ' - ' . $endFormatted . ' (Next day)';
+    }
+
+    return $startFormatted . ' - ' . $endFormatted;
+}
+
 /**
  * Shows a booking, payment, account or venue status as a polished coloured badge with semantic icon.
  * WCAG 2.2 AAA compliant, offline compatible using local uicons font.

@@ -85,7 +85,7 @@ class Report
         [$whereClause, $params] = self::buildBookingFilters($filters);
 
         $pdo = get_db_connection();
-        $sql = 'SELECT b.booking_reference, u.full_name AS customer_name, v.venue_name, v.venue_type, b.booking_date,
+        $sql = 'SELECT b.booking_reference, u.full_name AS customer_name, v.venue_name, v.venue_type, b.event_type, b.event_type_charge, b.booking_date,
                        b.start_time, b.end_time, b.booking_status, b.total_charge
                 FROM bookings b
                 LEFT JOIN users u ON u.user_id = b.customer_id
@@ -128,7 +128,13 @@ class Report
         $sql = 'SELECT v.venue_name,
                        v.venue_type,
                        COUNT(b.booking_id) AS booking_count,
-                       COALESCE(ROUND(SUM(TIMESTAMPDIFF(MINUTE, CONCAT(b.booking_date, " ", b.start_time), CONCAT(b.booking_date, " ", b.end_time)) / 60), 2), 0) AS total_hours
+                       COALESCE(ROUND(SUM(
+                           CASE
+                               WHEN b.end_time > b.start_time THEN TIMESTAMPDIFF(MINUTE, CONCAT(b.booking_date, " ", b.start_time), CONCAT(b.booking_date, " ", b.end_time))
+                               WHEN b.end_time < b.start_time THEN TIMESTAMPDIFF(MINUTE, CONCAT(b.booking_date, " ", b.start_time), CONCAT(DATE_ADD(b.booking_date, INTERVAL 1 DAY), " ", b.end_time))
+                               ELSE 0
+                           END / 60
+                       ), 2), 0) AS total_hours
                 FROM venues v
                 LEFT JOIN bookings b ON ' . implode(' AND ', $joinConditions);
         [$venueWhere, $venueParams] = self::buildVenueFilters($filters, 'v');

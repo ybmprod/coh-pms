@@ -26,10 +26,12 @@ $venues = $venues ?? [];
 
         <section class="dashboard-main" aria-label="Customer bookings workspace">
             <section id="request" class="tab-section active" data-tab="request" aria-labelledby="booking-request-title">
-                <header class="page-header">
-                    <span class="eyebrow">Book a Venue</span>
-                    <h1 id="booking-request-title">Venue Booking Request</h1>
-                    <p>Select a venue and provide event details to submit a request.</p>
+                <header id="booking-venue-hero" class="page-header booking-venue-hero">
+                    <div class="booking-venue-hero-inner">
+                        <span class="eyebrow" id="booking-hero-eyebrow">Book a Venue</span>
+                        <h1 id="booking-request-title">Venue Booking Request</h1>
+                        <p id="booking-hero-subtitle">Select a venue and provide event details to submit a request.</p>
+                    </div>
                 </header>
 
                 <ol class="workflow-steps" aria-label="Booking steps">
@@ -63,7 +65,22 @@ $venues = $venues ?? [];
                                     <option value="">Select a venue</option>
                                     <?php $preselectedVenueId = (int) ($_GET['venue_id'] ?? 0); ?>
                                     <?php foreach ($venues as $venue): ?>
-                                        <option value="<?php echo e((string) $venue['venue_id']); ?>"<?php echo (int) $venue['venue_id'] === $preselectedVenueId ? ' selected' : ''; ?>><?php echo e($venue['venue_name']); ?> - <?php echo e($venue['location']); ?></option>
+                                        <?php
+                                        $vImgUrl = venue_image_url($venue['image_path'] ?? null);
+                                        $vImgExists = false;
+                                        if ($vImgUrl !== '' && !empty($venue['image_path'])) {
+                                            $vFilename = basename(str_replace('\\', '/', (string) $venue['image_path']));
+                                            $vImgExists = is_file(APP_UPLOAD_PATH . DIRECTORY_SEPARATOR . $vFilename);
+                                        }
+                                        ?>
+                                        <option value="<?php echo e((string) $venue['venue_id']); ?>"
+                                            data-price="<?php echo e((string) ($venue['standard_price'] ?? 0)); ?>"
+                                            data-name="<?php echo e((string) ($venue['venue_name'] ?? '')); ?>"
+                                            data-location="<?php echo e((string) ($venue['location'] ?? '')); ?>"
+                                            data-type="<?php echo e((string) ($venue['venue_type'] ?? 'Venue')); ?>"
+                                            data-capacity="<?php echo e((string) ($venue['capacity'] ?? 0)); ?>"
+                                            data-image="<?php echo $vImgExists ? e($vImgUrl) : ''; ?>"
+                                            <?php echo (int) $venue['venue_id'] === $preselectedVenueId ? ' selected' : ''; ?>><?php echo e($venue['venue_name']); ?> - <?php echo e($venue['location']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -74,23 +91,38 @@ $venues = $venues ?? [];
                             </div>
 
                             <div class="field-group">
-                                <label for="start_time">Start time</label>
+                                <label for="start_time">Start time <span id="start-time-period" class="badge" style="display: none; margin-left: 6px; font-size: 0.72rem; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-muted); color: var(--primary-dark);"></span></label>
                                 <input id="start_time" name="start_time" type="time" required>
                             </div>
 
                             <div class="field-group">
-                                <label for="end_time">End time</label>
+                                <label for="end_time">End time <span id="end-time-period" class="badge" style="display: none; margin-left: 6px; font-size: 0.72rem; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-muted); color: var(--primary-dark);"></span></label>
                                 <input id="end_time" name="end_time" type="time" required>
                             </div>
 
                             <div class="field-group">
-                                <label for="event_type">Event type</label>
-                                <input id="event_type" name="event_type" type="text" placeholder="e.g. Conference, Wedding, Tournament" required>
+                                <label for="event_type">Event type *</label>
+                                <select id="event_type" name="event_type" required>
+                                    <option value="">Select event type...</option>
+                                    <?php if (!empty($eventTypes)): ?>
+                                        <?php foreach ($eventTypes as $et): ?>
+                                            <option value="<?php echo e($et['event_name']); ?>" data-charge-type="<?php echo e($et['charge_type']); ?>" data-charge-val="<?php echo e((string) $et['charge_value']); ?>">
+                                                <?php echo e($et['event_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="Wedding">Wedding</option>
+                                        <option value="Sports Tournament">Sports Tournament</option>
+                                        <option value="Music Concert">Music Concert</option>
+                                        <option value="Community Meeting">Community Meeting</option>
+                                        <option value="Church Gathering">Church Gathering</option>
+                                    <?php endif; ?>
+                                </select>
                             </div>
 
                             <div class="field-group">
-                                <label for="number_of_attendees">Expected attendance</label>
-                                <input id="number_of_attendees" name="number_of_attendees" type="number" min="1" required>
+                                <label for="expected_attendance">Expected attendance</label>
+                                <input id="expected_attendance" name="expected_attendance" type="number" min="1" required>
                             </div>
                         </div>
 
@@ -110,6 +142,10 @@ $venues = $venues ?? [];
                                 <div class="estimate-row">
                                     <dt>Standard charge</dt>
                                     <dd id="standard-charge">-</dd>
+                                </div>
+                                <div class="estimate-row" id="event-type-charge-row" style="display: none;">
+                                    <dt>Event type charge</dt>
+                                    <dd id="event-type-charge">-</dd>
                                 </div>
                                 <div class="estimate-row">
                                     <dt>Pricing rule</dt>
@@ -169,7 +205,7 @@ $venues = $venues ?? [];
                                         <td data-label="Reference"><strong><?php echo e($booking['booking_reference']); ?></strong></td>
                                         <td data-label="Venue"><?php echo e($booking['venue_name'] ?? '-'); ?></td>
                                         <td data-label="Date"><?php echo e(format_date((string) $booking['booking_date'])); ?></td>
-                                        <td data-label="Time"><?php echo e($booking['start_time'] . ' - ' . $booking['end_time']); ?></td>
+                                        <td data-label="Time"><?php echo e(format_booking_time_range((string) $booking['start_time'], (string) $booking['end_time'])); ?></td>
                                         <td data-label="Charge" class="money"><?php echo e(money_format_usd((float) $booking['total_charge'])); ?></td>
                                         <td data-label="Status"><?php echo status_badge($booking['booking_status']); ?></td>
                                         <td data-label="Payment status"><?php echo status_badge($booking['payment_status'] ?? null, 'Not submitted'); ?></td>
@@ -189,7 +225,7 @@ $venues = $venues ?? [];
                                                 </form>
                                             <?php endif; ?>
                                             <?php if (($booking['payment_status'] ?? '') === PAYMENT_STATUS_VERIFIED): ?>
-                                                <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=payment/receipt&booking_id=' . (int) $booking['booking_id']); ?>">Receipt</a>
+                                                <a class="button secondary small-button" href="<?php echo e(BASE_URL . '/?r=payment/receipt&booking_id=' . (int) $booking['booking_id']); ?>">Verification</a>
                                             <?php endif; ?>
                                             <?php if (
                                                 $booking['booking_status'] === BOOKING_STATUS_APPROVED
@@ -204,8 +240,8 @@ $venues = $venues ?? [];
                                                         <option value="Mobile Money">Mobile Money</option>
                                                         <option value="Card">Card</option>
                                                     </select>
-                                                    <input type="text" name="transaction_reference" aria-label="Transaction reference for <?php echo e($booking['booking_reference']); ?>" placeholder="Reference" maxlength="100" required>
-                                                    <button type="submit" class="button primary small-button">Pay</button>
+                                                    <input type="text" name="transaction_reference" aria-label="Transaction reference for <?php echo e($booking['booking_reference']); ?>" placeholder="e.g. POP-847291" maxlength="100" required>
+                                                    <button type="submit" class="button primary small-button">Submit Proof</button>
                                                 </form>
                                             <?php endif; ?>
                                         </td>
@@ -220,6 +256,6 @@ $venues = $venues ?? [];
     </main>
 
     <?php include APP_VIEW_PATH . '/layouts/footer.php'; ?>
-    <script src="<?php echo e(BASE_URL . '/assets/js/booking.js'); ?>" defer></script>
+    <script src="<?php echo e(BASE_URL . '/assets/js/booking.js?v=' . filemtime(APP_PUBLIC_PATH . '/assets/js/booking.js')); ?>" defer></script>
 </body>
 </html>

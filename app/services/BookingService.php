@@ -100,7 +100,7 @@ class BookingService
         $start = trim((string) ($input['start_time'] ?? ''));
         $end = trim((string) ($input['end_time'] ?? ''));
         $eventType = trim((string) ($input['event_type'] ?? ''));
-        $attendees = (int) ($input['number_of_attendees'] ?? 0);
+        $attendees = (int) ($input['expected_attendance'] ?? $input['number_of_attendees'] ?? 0);
 
         $parsedDate = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
         if (!$parsedDate || $parsedDate->format('Y-m-d') !== $date) {
@@ -111,8 +111,10 @@ class BookingService
         }
         $this->assertTime($start);
         $this->assertTime($end);
-        if ($end <= $start) {
-            throw new DomainException('End time must be later than start time.');
+        if (!$this->isValidTimeOrder($start, $end)) {
+            throw new DomainException(
+                'End time must be later than start time. Overnight bookings are only allowed from evening (18:00 / 6:00 PM) into the next morning (up to 09:00 / 9:00 AM).'
+            );
         }
         if ($eventType === '' || mb_strlen($eventType) > 100) {
             throw new DomainException('Event type is required and must be no more than 100 characters.');
@@ -131,24 +133,38 @@ class BookingService
             if ($venue['venue_status'] !== 'Available') {
                 throw new DomainException('This venue is not currently available.');
             }
+            if ($attendees > (int) $venue['capacity']) {
+                throw new DomainException("Requested attendance ({$attendees}) exceeds venue capacity of {$venue['capacity']}.");
+            }
 
             $availability = (new AvailabilityService())->check($venueId, $date, $start, $end, 0, $pdo);
             if (!$availability['available']) {
                 throw new DomainException($availability['message']);
             }
 
-            $charge = (new PricingService())->calculate($venueId, $date, $start, $end);
+            $eventTypeId = null;
+            if (class_exists('EventType') && $eventType !== '') {
+                $et = EventType::findByName($eventType, $pdo);
+                if ($et) {
+                    $eventTypeId = (int) $et['event_type_id'];
+                }
+            }
+
+            $charge = (new PricingService())->calculate($venueId, $date, $start, $end, $eventType, (float) ($input['event_type_charge'] ?? 0));
             $bookingId = Booking::create([
                 'booking_reference' => 'TMP-' . bin2hex(random_bytes(8)),
                 'customer_id' => $customerId,
                 'venue_id' => $venueId,
+                'event_type_id' => $eventTypeId,
                 'pricing_rule_id' => $charge['pricing_rule_id'],
                 'booking_date' => $date,
                 'start_time' => $start,
                 'end_time' => $end,
                 'event_type' => $eventType,
+                'expected_attendance' => $attendees,
                 'number_of_attendees' => $attendees,
                 'standard_charge' => $charge['standard_charge'],
+                'event_type_charge' => $charge['event_type_charge'] ?? 0.00,
                 'adjustment_amount' => $charge['adjustment_amount'],
                 'total_charge' => $charge['total_charge'],
                 'booking_status' => BOOKING_STATUS_PENDING,
@@ -182,6 +198,18 @@ class BookingService
         if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $time)) {
             throw new DomainException('Time must use the HH:MM format.');
         }
+    }
+
+    private function isValidTimeOrder(string $start, string $end): bool
+    {
+        if ($end > $start) {
+            return true;
+        }
+        if ($end === $start) {
+            return false;
+        }
+
+        return $start >= '18:00' && $end <= '09:00';
     }
 
     public function allowedStaffActions(array $booking): array

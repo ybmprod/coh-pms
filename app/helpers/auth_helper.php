@@ -51,9 +51,27 @@ function is_staff_portal_request(): bool
         return true;
     }
 
-    $staffPrefixes = ['pricingrule/', 'report/', 'user/'];
-    foreach ($staffPrefixes as $prefix) {
-        if (str_starts_with($route, $prefix)) {
+    // Controllers that exist ONLY in the staff portal. Any action on them
+    // (current or future) is automatically treated as a staff request, so a new
+    // action can never silently fall back to the customer portal.
+    $staffOnlyControllers = ['pricingrule', 'eventtype', 'report', 'user'];
+    $controller = explode('/', $route)[0];
+
+    if (in_array($controller, $staffOnlyControllers, true)) {
+        return true;
+    }
+
+    // If an authenticated staff member is logged in and not also in an active customer session,
+    // ensure routes that are not explicitly customer-facing stay in the staff workspace.
+    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['staff_user_id']) && empty($_SESSION['customer_user_id'])) {
+        $customerOnlyRoutes = [
+            'auth/login',
+            'auth/register',
+            'venue/customerlist',
+            'booking/customerlist',
+            'dashboard/customer',
+        ];
+        if (!in_array($route, $customerOnlyRoutes, true)) {
             return true;
         }
     }

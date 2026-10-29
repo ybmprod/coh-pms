@@ -27,7 +27,7 @@ $flash = get_flash();
             <header class="page-header">
                 <span class="eyebrow">Browse Venues</span>
                 <h1 id="venues-page-title">Available venues</h1>
-                <p>Compare council venues, then open one to see full details and book.</p>
+                <p>Explore City of Harare municipal facilities. Select a venue to view specifications, standard rates, and availability.</p>
             </header>
 
             <?php if (empty($venues)): ?>
@@ -39,14 +39,26 @@ $flash = get_flash();
             <?php else: ?>
                 <div class="cv-grid">
                     <?php foreach ($venues as $venue): ?>
-                        <?php $imageUrl = venue_image_url($venue['image_path'] ?? null); ?>
+                        <?php
+                        $rawImagePath = (string) ($venue['image_path'] ?? '');
+                        $filename = basename(str_replace('\\', '/', $rawImagePath));
+                        $imageExists = $rawImagePath !== '' && is_file(APP_UPLOAD_PATH . DIRECTORY_SEPARATOR . $filename);
+                        $imageUrl = $imageExists ? venue_image_url($rawImagePath) : '';
+                        ?>
                         <article class="cv-card">
                             <div class="cv-card-media">
-                                <?php if ($imageUrl !== ''): ?>
-                                    <img src="<?php echo e($imageUrl); ?>" alt="<?php echo e($venue['venue_name']); ?>" loading="lazy">
+                                <?php if ($imageExists): ?>
+                                    <img src="<?php echo e($imageUrl); ?>" alt="<?php echo e($venue['venue_name']); ?>" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="cv-broken-preview" style="display: none;" aria-hidden="true">
+                                        <span class="cv-broken-badge"><i class="fi fi-sr-picture" aria-hidden="true"></i></span>
+                                        <p class="cv-broken-text">Image unavailable</p>
+                                        <p class="cv-broken-sub"><?php echo e($venue['venue_type']); ?></p>
+                                    </div>
                                 <?php else: ?>
-                                    <div class="cv-placeholder" aria-hidden="true">
-                                        <i class="fi fi-sr-picture" aria-hidden="true" style="font-size: 32px;"></i>
+                                    <div class="cv-broken-preview" aria-hidden="true">
+                                        <span class="cv-broken-badge"><i class="fi fi-sr-building" aria-hidden="true"></i></span>
+                                        <p class="cv-broken-text">Image unavailable</p>
+                                        <p class="cv-broken-sub"><?php echo e($venue['venue_type']); ?></p>
                                     </div>
                                 <?php endif; ?>
                                 <span class="cv-type-chip"><?php echo e($venue['venue_type']); ?></span>

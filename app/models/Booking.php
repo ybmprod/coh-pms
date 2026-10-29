@@ -70,13 +70,15 @@ class Booking
                     booking_reference,
                     customer_id,
                     venue_id,
+                    event_type_id,
                     pricing_rule_id,
                     booking_date,
                     start_time,
                     end_time,
                     event_type,
-                    number_of_attendees,
+                    expected_attendance,
                     standard_charge,
+                    event_type_charge,
                     adjustment_amount,
                     total_charge,
                     booking_status,
@@ -87,13 +89,15 @@ class Booking
                     :booking_reference,
                     :customer_id,
                     :venue_id,
+                    :event_type_id,
                     :pricing_rule_id,
                     :booking_date,
                     :start_time,
                     :end_time,
                     :event_type,
-                    :number_of_attendees,
+                    :expected_attendance,
                     :standard_charge,
+                    :event_type_charge,
                     :adjustment_amount,
                     :total_charge,
                     :booking_status,
@@ -107,13 +111,15 @@ class Booking
             ':booking_reference' => $data['booking_reference'],
             ':customer_id' => (int) $data['customer_id'],
             ':venue_id' => (int) $data['venue_id'],
+            ':event_type_id' => !empty($data['event_type_id']) ? (int) $data['event_type_id'] : null,
             ':pricing_rule_id' => $data['pricing_rule_id'] !== null && $data['pricing_rule_id'] !== '' ? (int) $data['pricing_rule_id'] : null,
             ':booking_date' => $data['booking_date'],
             ':start_time' => $data['start_time'],
             ':end_time' => $data['end_time'],
             ':event_type' => $data['event_type'] ?? null,
-            ':number_of_attendees' => $data['number_of_attendees'] ?? null,
+            ':expected_attendance' => $data['expected_attendance'] ?? $data['number_of_attendees'] ?? null,
             ':standard_charge' => (float) ($data['standard_charge'] ?? 0),
+            ':event_type_charge' => (float) ($data['event_type_charge'] ?? 0),
             ':adjustment_amount' => (float) ($data['adjustment_amount'] ?? 0),
             ':total_charge' => (float) ($data['total_charge'] ?? 0),
             ':booking_status' => $data['booking_status'] ?? BOOKING_STATUS_PENDING,
@@ -152,13 +158,19 @@ class Booking
     ): array
     {
         $pdo = $pdo ?? get_db_connection();
+        $baseDate = DateTimeImmutable::createFromFormat('!Y-m-d', $bookingDate);
+        if (!$baseDate) {
+            return [];
+        }
+
+        $prevDate = $baseDate->modify('-1 day')->format('Y-m-d');
+        $nextDate = $baseDate->modify('+1 day')->format('Y-m-d');
+
         $sql = 'SELECT * FROM bookings
                 WHERE venue_id = :venue_id
-                  AND booking_date = :booking_date
+                  AND booking_date IN (:prev_date, :booking_date, :next_date)
                   AND booking_status IN (:pending, :approved, :confirmed)
-                  AND (:exclude_booking_id = 0 OR booking_id != :exclude_booking_id_value)
-                  AND start_time < :end_time
-                  AND end_time > :start_time';
+                  AND (:exclude_booking_id = 0 OR booking_id != :exclude_booking_id_value)';
         if ($forUpdate) {
             $sql .= ' FOR UPDATE';
         }
@@ -166,17 +178,52 @@ class Booking
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':venue_id' => $venueId,
+            ':prev_date' => $prevDate,
             ':booking_date' => $bookingDate,
+            ':next_date' => $nextDate,
             ':pending' => BOOKING_STATUS_PENDING,
             ':approved' => BOOKING_STATUS_APPROVED,
             ':confirmed' => BOOKING_STATUS_CONFIRMED,
-            ':end_time' => $endTime,
-            ':start_time' => $startTime,
             ':exclude_booking_id' => $excludeBookingId,
             ':exclude_booking_id_value' => $excludeBookingId,
         ]);
 
-        return $stmt->fetchAll();
+        $candidates = $stmt->fetchAll();
+        if ($candidates === []) {
+            return [];
+        }
+
+        [$reqStart, $reqEnd] = self::buildIntervalTimestamps($bookingDate, $startTime, $endTime);
+        $conflicts = [];
+
+        foreach ($candidates as $row) {
+            [$rowStart, $rowEnd] = self::buildIntervalTimestamps(
+                (string) $row['booking_date'],
+                substr((string) $row['start_time'], 0, 5),
+                substr((string) $row['end_time'], 0, 5)
+            );
+            if ($rowStart < $reqEnd && $rowEnd > $reqStart) {
+                $conflicts[] = $row;
+            }
+        }
+
+        return $conflicts;
+    }
+
+    private static function buildIntervalTimestamps(string $date, string $start, string $end): array
+    {
+        $startNorm = substr($start, 0, 5);
+        $endNorm = substr($end, 0, 5);
+        $startDt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', $date . ' ' . $startNorm);
+        $endDt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', $date . ' ' . $endNorm);
+        if (!$startDt || !$endDt) {
+            return [0, 0];
+        }
+        if ($endNorm <= $startNorm) {
+            $endDt = $endDt->modify('+1 day');
+        }
+
+        return [$startDt->getTimestamp(), $endDt->getTimestamp()];
     }
 
     public static function getReferencesForDate(string $bookingDate, int $excludeBookingId, PDO $pdo): array

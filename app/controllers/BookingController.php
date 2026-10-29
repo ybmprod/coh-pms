@@ -35,6 +35,7 @@ class BookingController extends Controller
             'pageTitle' => 'My Bookings',
             'bookings' => Booking::getByCustomer((int) $user['id']),
             'venues' => Venue::getActive(),
+            'eventTypes' => class_exists('EventType') ? EventType::getActive() : [],
         ]);
     }
 
@@ -83,10 +84,13 @@ class BookingController extends Controller
         $date = trim((string) ($_GET['booking_date'] ?? ''));
         $start = trim((string) ($_GET['start_time'] ?? ''));
         $end = trim((string) ($_GET['end_time'] ?? ''));
+        $eventType = trim((string) ($_GET['event_type'] ?? ''));
+        $eventTypeCharge = (float) ($_GET['event_type_charge'] ?? 0);
         $result = [
             'available' => false,
             'message' => 'Select a venue, date, start time, and end time.',
             'standard_charge' => null,
+            'event_type_charge' => null,
             'adjustment_amount' => null,
             'total_charge' => null,
             'rule_name' => null,
@@ -98,8 +102,9 @@ class BookingController extends Controller
                 (new AvailabilityService())->check($venueId, $date, $start, $end)
             );
             try {
-                $charge = (new PricingService())->calculate($venueId, $date, $start, $end);
+                $charge = (new PricingService())->calculate($venueId, $date, $start, $end, $eventType, $eventTypeCharge);
                 $result['standard_charge'] = $charge['standard_charge'];
+                $result['event_type_charge'] = $charge['event_type_charge'];
                 $result['adjustment_amount'] = $charge['adjustment_amount'];
                 $result['total_charge'] = $charge['total_charge'];
                 $result['rule_name'] = $charge['rule_name'];
@@ -108,6 +113,26 @@ class BookingController extends Controller
                     $result['available'] = false;
                     $result['message'] = $exception->getMessage();
                 }
+            }
+        } elseif ($venueId > 0) {
+            try {
+                $previewDate = $date !== '' ? $date : date('Y-m-d');
+                $previewStart = ($start !== '' && $end !== '' && $start !== $end) ? $start : '09:00';
+                $previewEnd = ($start !== '' && $end !== '' && $start !== $end) ? $end : '10:00';
+                $charge = (new PricingService())->calculate($venueId, $previewDate, $previewStart, $previewEnd, $eventType, $eventTypeCharge);
+                $result['standard_charge'] = $charge['standard_charge'];
+                $result['event_type_charge'] = $charge['event_type_charge'];
+                if ($date !== '') {
+                    $result['adjustment_amount'] = $charge['adjustment_amount'];
+                    $result['total_charge'] = $charge['total_charge'];
+                    $result['rule_name'] = $charge['rule_name'];
+                } else {
+                    $result['adjustment_amount'] = 0.0;
+                    $result['total_charge'] = round($charge['standard_charge'] + $charge['event_type_charge'], 2);
+                    $result['rule_name'] = 'Select date & time for rule adjustments';
+                }
+            } catch (Throwable $exception) {
+                // Keep default nulls if venue lookup fails
             }
         }
 

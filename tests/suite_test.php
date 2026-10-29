@@ -216,15 +216,87 @@ runCheck('PRC-07', 'Fixed discount exceeding standard price is capped at US$0.00
     return abs($charge['total_charge'] - 0.00) < 0.001 && $charge['adjustment_amount'] === -100.00;
 });
 
-// Receipt Reference & Format
-runCheck('PAY-01', 'Receipt reference regex format matches RCT-YYYYMMDD-XXXX', function() {
-    $sample = 'RCT-20261004-0001';
-    return preg_match('/^RCT-\d{8}-\d{4}$/', $sample) === 1;
+// Event Type Charge Determination
+runCheck('EVT-01', 'Event-type charge correctly determines total charge: Total = Standard + Event + Rule', function() use ($testVenue) {
+    $rule = [
+        'pricing_rule_id' => 1, 'rule_name' => 'Weekday Discount', 'venue_type' => 'All',
+        'rule_type' => 'Weekday Discount', 'adjustment_type' => 'Percentage', 'adjustment_value' => 10.00,
+        'days_of_week' => 'Mon,Tue,Wed,Thu', 'min_hours' => null, 'start_date' => '2026-01-01',
+        'end_date' => '2027-12-31', 'priority' => 10, 'rule_status' => 'Active',
+    ];
+    $service = new PricingService(fn() => $testVenue, fn() => [$rule]);
+    $charge = $service->calculate(1, '2026-10-05', '09:00', '13:00', 'Wedding', 50.00);
+    return abs($charge['standard_charge'] - 100.00) < 0.001
+        && abs($charge['event_type_charge'] - 50.00) < 0.001
+        && abs($charge['adjustment_amount'] - (-10.00)) < 0.001
+        && abs($charge['total_charge'] - 140.00) < 0.001;
+});
+
+// Payment Verification Reference & Format
+runCheck('PAY-01', 'Payment verification reference regex format matches COH-PMS-VER-XXXXXX', function() {
+    $sample = 'COH-PMS-VER-000001';
+    return preg_match('/^COH-PMS-VER-\d{6}$/', $sample) === 1;
 });
 
 runCheck('BKG-03', 'Booking reference regex format matches COH-YYYYMMDD-XXXX', function() {
     $sample = 'COH-20261004-0001';
     return preg_match('/^COH-\d{8}-\d{4}$/', $sample) === 1;
+});
+
+runCheck('OVN-01', 'Overnight cross-midnight booking (22:00 to 05:30 = 7.5 hrs) calculates accurately', function() use ($testVenue) {
+    $weekday = [
+        'pricing_rule_id' => 1, 'rule_name' => 'Weekday Discount', 'venue_type' => 'All',
+        'rule_type' => 'Weekday Discount', 'adjustment_type' => 'Percentage', 'adjustment_value' => 10.00,
+        'days_of_week' => 'Mon,Tue,Wed,Thu', 'min_hours' => null, 'start_date' => '2026-01-01',
+        'end_date' => '2027-12-31', 'priority' => 10, 'rule_status' => 'Active',
+    ];
+    $long = [
+        'pricing_rule_id' => 4, 'rule_name' => 'Long Booking Discount', 'venue_type' => 'All',
+        'rule_type' => 'Long Booking Discount', 'adjustment_type' => 'Percentage', 'adjustment_value' => 5.00,
+        'days_of_week' => null, 'min_hours' => 8.0, 'start_date' => '2026-01-01',
+        'end_date' => '2027-12-31', 'priority' => 11, 'rule_status' => 'Active',
+    ];
+    $service = new PricingService(fn() => $testVenue, fn() => [$weekday, $long]);
+    $charge = $service->calculate(1, '2026-10-05', '22:00', '05:30', 'Church Gathering', 15.00);
+    return abs($charge['total_charge'] - 105.00) < 0.001 && $charge['rule_name'] === 'Weekday Discount';
+});
+
+runCheck('OVN-02', 'Overnight 8.5-hr booking (22:00 to 06:30) triggers Long Booking Discount', function() use ($testVenue) {
+    $weekday = [
+        'pricing_rule_id' => 1, 'rule_name' => 'Weekday Discount', 'venue_type' => 'All',
+        'rule_type' => 'Weekday Discount', 'adjustment_type' => 'Percentage', 'adjustment_value' => 10.00,
+        'days_of_week' => 'Mon,Tue,Wed,Thu', 'min_hours' => null, 'start_date' => '2026-01-01',
+        'end_date' => '2027-12-31', 'priority' => 10, 'rule_status' => 'Active',
+    ];
+    $long = [
+        'pricing_rule_id' => 4, 'rule_name' => 'Long Booking Discount', 'venue_type' => 'All',
+        'rule_type' => 'Long Booking Discount', 'adjustment_type' => 'Percentage', 'adjustment_value' => 5.00,
+        'days_of_week' => null, 'min_hours' => 8.0, 'start_date' => '2026-01-01',
+        'end_date' => '2027-12-31', 'priority' => 11, 'rule_status' => 'Active',
+    ];
+    $service = new PricingService(fn() => $testVenue, fn() => [$weekday, $long]);
+    $charge = $service->calculate(1, '2026-10-05', '22:00', '06:30');
+    return abs($charge['total_charge'] - 95.00) < 0.001 && $charge['rule_name'] === 'Long Booking Discount';
+});
+
+runCheck('OVN-03', 'Zero-duration booking (start_time === end_time) is rejected', function() use ($testVenue) {
+    $service = new PricingService(fn() => $testVenue, fn() => []);
+    try {
+        $service->calculate(1, '2026-10-05', '22:00', '22:00');
+        return false;
+    } catch (InvalidArgumentException $e) {
+        return true;
+    }
+});
+
+runCheck('OVN-04', 'Reversed daytime hours (e.g. 14:00 to 10:00) are rejected', function() use ($testVenue) {
+    $service = new PricingService(fn() => $testVenue, fn() => []);
+    try {
+        $service->calculate(1, '2026-10-05', '14:00', '10:00');
+        return false;
+    } catch (InvalidArgumentException $e) {
+        return true;
+    }
 });
 
 echo "\nSummary: {$passed} PASSED, {$failed} FAILED\n";

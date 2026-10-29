@@ -28,7 +28,7 @@ $canVerifyPayments = in_array($user['role'] ?? '', [ROLE_ADMINISTRATOR, ROLE_REV
         <section class="dashboard-main" aria-labelledby="payment-verification-title">
             <header class="page-header">
                 <h1 id="payment-verification-title">Payment verification</h1>
-                <p>Review submitted payments, confirm transactions, and issue receipts.</p>
+                <p>Review submitted payment proofs, reconcile transactions, and generate payment verification references.</p>
             </header>
 
             <section class="card" aria-labelledby="payments-queue-heading">
@@ -57,7 +57,7 @@ $canVerifyPayments = in_array($user['role'] ?? '', [ROLE_ADMINISTRATOR, ROLE_REV
                             <th>Method</th>
                             <th>Reference</th>
                             <th>Status</th>
-                            <th>Receipt</th>
+                            <th>Verification Ref</th>
                             <?php if ($canVerifyPayments): ?><th>Action</th><?php endif; ?>
                         </tr>
                     </thead>
@@ -82,9 +82,9 @@ $canVerifyPayments = in_array($user['role'] ?? '', [ROLE_ADMINISTRATOR, ROLE_REV
                                     <td data-label="Method"><?php echo e($payment['payment_method']); ?></td>
                                     <td data-label="Reference"><?php echo e($payment['transaction_reference']); ?></td>
                                     <td data-label="Status"><?php echo status_badge($payment['payment_status']); ?></td>
-                                    <td data-label="Receipt">
+                                    <td data-label="Verification Ref">
                                         <?php if ($payment['payment_status'] === PAYMENT_STATUS_VERIFIED): ?>
-                                            <a class="button ghost small-button" href="<?php echo e(BASE_URL . '/?r=payment/receipt&booking_id=' . (int) $payment['booking_id'] . '&portal=staff'); ?>">View receipt</a>
+                                            <a class="button ghost small-button" href="<?php echo e(BASE_URL . '/?r=payment/receipt&booking_id=' . (int) $payment['booking_id'] . '&portal=staff'); ?>"><?php echo e($payment['receipt_number'] ?: 'View verification'); ?></a>
                                         <?php else: ?>
                                             -
                                         <?php endif; ?>

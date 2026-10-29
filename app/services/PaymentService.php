@@ -153,12 +153,17 @@ class PaymentService
 
     private function nextReceiptNumber(PDO $pdo): string
     {
-        $prefix = 'RCT-' . date('Ymd') . '-';
+        $prefix = 'COH-PMS-VER-';
         $stmt = $pdo->prepare('SELECT receipt_number FROM payments WHERE receipt_number LIKE :receipt_prefix ORDER BY receipt_number DESC LIMIT 1 FOR UPDATE');
         $stmt->execute([':receipt_prefix' => $prefix . '%']);
         $lastReceipt = $stmt->fetchColumn();
-        $sequence = $lastReceipt === false ? 1 : ((int) substr((string) $lastReceipt, -4)) + 1;
+        if ($lastReceipt === false) {
+            $sequence = 1;
+        } else {
+            preg_match('/(\d+)$/', (string) $lastReceipt, $m);
+            $sequence = isset($m[1]) ? ((int) $m[1]) + 1 : 1;
+        }
 
-        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
     }
 }
