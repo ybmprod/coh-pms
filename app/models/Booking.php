@@ -1,0 +1,333 @@
+<?php
+declare(strict_types=1);
+
+// CHAPTER 5.3.3 - Booking and Availability Management
+class Booking
+{
+    public static function getAll(?int $limit = null, int $offset = 0): array
+    {
+        $pdo = get_db_connection();
+        $sql = 'SELECT b.*, v.venue_name, v.location, c.full_name AS customer_name, r.full_name AS reviewer_name
+                FROM bookings b
+                LEFT JOIN venues v ON v.venue_id = b.venue_id
+                LEFT JOIN users c ON c.user_id = b.customer_id
+                LEFT JOIN users r ON r.user_id = b.reviewed_by
+                ORDER BY b.booking_date DESC, b.start_time ASC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT :limit_rows OFFSET :offset_rows';
+        }
+
+        $stmt = $pdo->prepare($sql);
+        if ($limit !== null) {
+            $stmt->bindValue(':limit_rows', max(1, $limit), PDO::PARAM_INT);
+            $stmt->bindValue(':offset_rows', max(0, $offset), PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public static function countAll(): int
+    {
+        return (int) get_db_connection()->query('SELECT COUNT(*) FROM bookings')->fetchColumn();
+    }
+
+    public static function getByCustomer(int $customerId, ?int $limit = null, int $offset = 0): array
+    {
+        $pdo = get_db_connection('customer_read');
+        $sql = 'SELECT * FROM v_customer_bookings
+                WHERE customer_id = :customer_id
+                ORDER BY booking_date DESC, start_time ASC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT :limit_rows OFFSET :offset_rows';
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':customer_id', $customerId, PDO::PARAM_INT);
+        if ($limit !== null) {
+            $stmt->bindValue(':limit_rows', max(1, $limit), PDO::PARAM_INT);
+            $stmt->bindValue(':offset_rows', max(0, $offset), PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public static function countByCustomer(int $customerId): int
+    {
+        $pdo = get_db_connection('customer_read');
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM v_customer_bookings WHERE customer_id = :customer_id');
+        $stmt->execute([':customer_id' => $customerId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public static function findByIdForCustomer(int $bookingId, int $customerId): ?array
+    {
+        $pdo = get_db_connection('customer_read');
+        $sql = 'SELECT * FROM v_customer_bookings
+                WHERE booking_id = :booking_id AND customer_id = :customer_id
+                LIMIT 1';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':booking_id' => $bookingId,
+            ':customer_id' => $customerId,
+        ]);
+
+        $booking = $stmt->fetch();
+        return $booking ?: null;
+    }
+
+    public static function findById(int $bookingId, ?PDO $pdo = null): ?array
+    {
+        $pdo = $pdo ?? get_db_connection();
+        $sql = 'SELECT b.*, v.venue_name, v.location, c.full_name AS customer_name, r.full_name AS reviewer_name,
+                   pr.rule_name,
+                   (SELECT p.payment_status FROM payments p WHERE p.booking_id = b.booking_id ORDER BY p.payment_id DESC LIMIT 1) AS payment_status,
+                   (SELECT p.receipt_number FROM payments p WHERE p.booking_id = b.booking_id ORDER BY p.payment_id DESC LIMIT 1) AS receipt_number
+                FROM bookings b
+                LEFT JOIN venues v ON v.venue_id = b.venue_id
+                LEFT JOIN users c ON c.user_id = b.customer_id
+                LEFT JOIN users r ON r.user_id = b.reviewed_by
+                LEFT JOIN pricing_rules pr ON pr.pricing_rule_id = b.pricing_rule_id
+                WHERE b.booking_id = :booking_id LIMIT 1';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':booking_id' => $bookingId]);
+
+        $booking = $stmt->fetch();
+        return $booking ?: null;
+    }
+
+    public static function findByIdForUpdate(int $bookingId, PDO $pdo): ?array
+    {
+        $stmt = $pdo->prepare('SELECT * FROM bookings WHERE booking_id = :booking_id LIMIT 1 FOR UPDATE');
+        $stmt->execute([':booking_id' => $bookingId]);
+
+        $booking = $stmt->fetch();
+        return $booking ?: null;
+    }
+
+    public static function create(array $data, ?PDO $pdo = null): int
+    {
+        $pdo = $pdo ?? get_db_connection();
+        $sql = 'INSERT INTO bookings (
+                    booking_reference,
+                    customer_id,
+                    venue_id,
+                    event_type_id,
+                    pricing_rule_id,
+                    booking_date,
+                    start_time,
+                    end_time,
+                    event_type,
+                    expected_attendance,
+                    standard_charge,
+                    event_type_charge,
+                    adjustment_amount,
+                    total_charge,
+                    booking_status,
+                    reviewed_by,
+                    created_at,
+                    updated_at
+                ) VALUES (
+                    :booking_reference,
+                    :customer_id,
+                    :venue_id,
+                    :event_type_id,
+                    :pricing_rule_id,
+                    :booking_date,
+                    :start_time,
+                    :end_time,
+                    :event_type,
+                    :expected_attendance,
+                    :standard_charge,
+                    :event_type_charge,
+                    :adjustment_amount,
+                    :total_charge,
+                    :booking_status,
+                    :reviewed_by,
+                    NOW(),
+                    NOW()
+                )';
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':booking_reference' => $data['booking_reference'],
+            ':customer_id' => (int) $data['customer_id'],
+            ':venue_id' => (int) $data['venue_id'],
+            ':event_type_id' => !empty($data['event_type_id']) ? (int) $data['event_type_id'] : null,
+            ':pricing_rule_id' => $data['pricing_rule_id'] !== null && $data['pricing_rule_id'] !== '' ? (int) $data['pricing_rule_id'] : null,
+            ':booking_date' => $data['booking_date'],
+            ':start_time' => $data['start_time'],
+            ':end_time' => $data['end_time'],
+            ':event_type' => $data['event_type'] ?? null,
+            ':expected_attendance' => $data['expected_attendance'] ?? $data['number_of_attendees'] ?? null,
+            ':standard_charge' => (float) ($data['standard_charge'] ?? 0),
+            ':event_type_charge' => (float) ($data['event_type_charge'] ?? 0),
+            ':adjustment_amount' => (float) ($data['adjustment_amount'] ?? 0),
+            ':total_charge' => (float) ($data['total_charge'] ?? 0),
+            ':booking_status' => $data['booking_status'] ?? BOOKING_STATUS_PENDING,
+            ':reviewed_by' => $data['reviewed_by'] ?? null,
+        ]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
+    public static function update(int $bookingId, array $data, PDO $pdo): bool
+    {
+        $sql = 'UPDATE bookings
+                SET venue_id = :venue_id,
+                    event_type_id = :event_type_id,
+                    pricing_rule_id = :pricing_rule_id,
+                    booking_date = :booking_date,
+                    start_time = :start_time,
+                    end_time = :end_time,
+                    event_type = :event_type,
+                    expected_attendance = :expected_attendance,
+                    standard_charge = :standard_charge,
+                    event_type_charge = :event_type_charge,
+                    adjustment_amount = :adjustment_amount,
+                    total_charge = :total_charge,
+                    updated_at = NOW()
+                WHERE booking_id = :booking_id';
+
+        $stmt = $pdo->prepare($sql);
+
+        return $stmt->execute([
+            ':booking_id' => $bookingId,
+            ':venue_id' => (int) $data['venue_id'],
+            ':event_type_id' => !empty($data['event_type_id']) ? (int) $data['event_type_id'] : null,
+            ':pricing_rule_id' => $data['pricing_rule_id'] !== null && $data['pricing_rule_id'] !== '' ? (int) $data['pricing_rule_id'] : null,
+            ':booking_date' => $data['booking_date'],
+            ':start_time' => $data['start_time'],
+            ':end_time' => $data['end_time'],
+            ':event_type' => $data['event_type'] ?? null,
+            ':expected_attendance' => $data['expected_attendance'] ?? $data['number_of_attendees'] ?? null,
+            ':standard_charge' => (float) ($data['standard_charge'] ?? 0),
+            ':event_type_charge' => (float) ($data['event_type_charge'] ?? 0),
+            ':adjustment_amount' => (float) ($data['adjustment_amount'] ?? 0),
+            ':total_charge' => (float) ($data['total_charge'] ?? 0),
+        ]);
+    }
+
+    public static function updateStatus(int $bookingId, string $status, ?int $reviewedBy = null, ?PDO $pdo = null): bool
+    {
+        $pdo = $pdo ?? get_db_connection();
+        $sql = 'UPDATE bookings
+                SET booking_status = :booking_status,
+                    reviewed_by = COALESCE(:reviewed_by, reviewed_by),
+                    updated_at = NOW()
+                WHERE booking_id = :booking_id';
+
+        $stmt = $pdo->prepare($sql);
+
+        return $stmt->execute([
+            ':booking_id' => $bookingId,
+            ':booking_status' => $status,
+            ':reviewed_by' => $reviewedBy,
+        ]);
+    }
+
+    public static function getVenueConflicts(
+        int $venueId,
+        string $bookingDate,
+        string $startTime,
+        string $endTime,
+        int $excludeBookingId = 0,
+        ?PDO $pdo = null,
+        bool $forUpdate = false
+    ): array
+    {
+        $pdo = $pdo ?? get_db_connection();
+        $baseDate = DateTimeImmutable::createFromFormat('!Y-m-d', $bookingDate);
+        if (!$baseDate) {
+            return [];
+        }
+
+        $prevDate = $baseDate->modify('-1 day')->format('Y-m-d');
+        $nextDate = $baseDate->modify('+1 day')->format('Y-m-d');
+
+        $sql = 'SELECT * FROM bookings
+                WHERE venue_id = :venue_id
+                  AND booking_date IN (:prev_date, :booking_date, :next_date)
+                  AND booking_status IN (:pending, :approved, :confirmed)
+                  AND (:exclude_booking_id = 0 OR booking_id != :exclude_booking_id_value)';
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':venue_id' => $venueId,
+            ':prev_date' => $prevDate,
+            ':booking_date' => $bookingDate,
+            ':next_date' => $nextDate,
+            ':pending' => BOOKING_STATUS_PENDING,
+            ':approved' => BOOKING_STATUS_APPROVED,
+            ':confirmed' => BOOKING_STATUS_CONFIRMED,
+            ':exclude_booking_id' => $excludeBookingId,
+            ':exclude_booking_id_value' => $excludeBookingId,
+        ]);
+
+        $candidates = $stmt->fetchAll();
+        if ($candidates === []) {
+            return [];
+        }
+
+        [$reqStart, $reqEnd] = self::buildIntervalTimestamps($bookingDate, $startTime, $endTime);
+        $conflicts = [];
+
+        foreach ($candidates as $row) {
+            [$rowStart, $rowEnd] = self::buildIntervalTimestamps(
+                (string) $row['booking_date'],
+                substr((string) $row['start_time'], 0, 5),
+                substr((string) $row['end_time'], 0, 5)
+            );
+            if ($rowStart < $reqEnd && $rowEnd > $reqStart) {
+                $conflicts[] = $row;
+            }
+        }
+
+        return $conflicts;
+    }
+
+    private static function buildIntervalTimestamps(string $date, string $start, string $end): array
+    {
+        $startNorm = substr($start, 0, 5);
+        $endNorm = substr($end, 0, 5);
+        $startDt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', $date . ' ' . $startNorm);
+        $endDt = DateTimeImmutable::createFromFormat('!Y-m-d H:i', $date . ' ' . $endNorm);
+        if (!$startDt || !$endDt) {
+            return [0, 0];
+        }
+        if ($endNorm <= $startNorm) {
+            $endDt = $endDt->modify('+1 day');
+        }
+
+        return [$startDt->getTimestamp(), $endDt->getTimestamp()];
+    }
+
+    public static function getReferencesForDate(string $bookingDate, int $excludeBookingId, PDO $pdo): array
+    {
+        $stmt = $pdo->prepare('SELECT booking_reference FROM bookings WHERE booking_date = :booking_date AND booking_id != :booking_id FOR UPDATE');
+        $stmt->execute([
+            ':booking_date' => $bookingDate,
+            ':booking_id' => $excludeBookingId,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public static function updateReference(int $bookingId, string $bookingReference, PDO $pdo): bool
+    {
+        $stmt = $pdo->prepare('UPDATE bookings SET booking_reference = :booking_reference, updated_at = NOW() WHERE booking_id = :booking_id');
+
+        return $stmt->execute([
+            ':booking_id' => $bookingId,
+            ':booking_reference' => $bookingReference,
+        ]);
+    }
+
+}

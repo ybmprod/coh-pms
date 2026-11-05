@@ -1,0 +1,34 @@
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+
+# Composer / Dependencies
+/vendor/
+
+# Logs and Caches
+*.log
+storage/logs/*.log
+storage/logs/rate_limits.json
+storage/logs/action_rate_limits.json
+storage/logs/action_rate_limits.json.lock
+!storage/logs/.gitkeep
+cache/
+tmp/
+temp/
+
+# Python caches (if running helper scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# OS and Editor artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json

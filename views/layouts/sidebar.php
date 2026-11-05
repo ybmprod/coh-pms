@@ -1,0 +1,283 @@
+<?php
+declare(strict_types=1);
+
+$isStaffPortal = is_staff_portal_request();
+$user = $isStaffPortal ? current_staff_user() : current_customer_user();
+$role = $user['role'] ?? '';
+
+$isAdministrator = $isStaffPortal && $role === ROLE_ADMINISTRATOR;
+$isBookingOfficer = $isStaffPortal && $role === ROLE_BOOKING_OFFICER;
+$isRevenueOfficer = $isStaffPortal && $role === ROLE_REVENUE_OFFICER;
+$isCouncilManagement = $isStaffPortal && $role === ROLE_COUNCIL_MANAGEMENT;
+$isCustomer = !$isStaffPortal && $role === ROLE_CUSTOMER;
+
+$canViewStaffArea = $isStaffPortal && in_array(
+    $role,
+    [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT],
+    true
+);
+
+$venueExpanded = str_contains(current_page_attr('venue/index'), 'page');
+$eventTypeExpanded = str_contains(current_page_attr('eventtype/index'), 'page');
+$pricingExpanded = str_contains(current_page_attr('pricingrule/index'), 'page');
+$bookingExpanded = str_contains(current_page_attr('booking/index'), 'page');
+$userExpanded = str_contains(current_page_attr('user/index'), 'page');
+$dashboardRoute = $isStaffPortal ? 'dashboard/index' : 'dashboard/customer';
+?>
+<aside class="sidebar" aria-label="Workspace navigation">
+    <button class="sidebar-mobile-toggle" type="button" aria-expanded="false" aria-controls="sidebar-navigation" aria-label="Toggle navigation menu">
+        <i class="fi fi-sr-apps nav-icon" aria-hidden="true"></i>
+        <span>Navigation Menu</span>
+        <span class="mobile-toggle-chevron" aria-hidden="true"></span>
+    </button>
+
+    <nav id="sidebar-navigation" class="sidebar-nav-container" aria-label="Main navigation">
+        <ul class="sidebar-nav">
+            <li>
+                <a href="<?php echo e(BASE_URL . '/?r=' . $dashboardRoute); ?>"<?php echo current_page_attr($dashboardRoute); ?>>
+                    <i class="fi fi-sr-apps nav-icon" aria-hidden="true"></i>Dashboard
+                </a>
+            </li>
+
+            <?php if ($isStaffPortal): ?>
+                <?php if ($isAdministrator || $isBookingOfficer): ?>
+                    <li class="accordion-item <?php echo $venueExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $venueExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-building nav-icon" aria-hidden="true"></i>Venue Management</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=venue/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-plus" aria-hidden="true"></i>Add Venue</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=venue/index#list'); ?>" class="tab-link" data-target="list"><i class="fi fi-sr-list" aria-hidden="true"></i>View Venues</a>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdministrator): ?>
+                    <li class="accordion-item <?php echo $pricingExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $pricingExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-tags nav-icon" aria-hidden="true"></i>Pricing Rules</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-plus" aria-hidden="true"></i>Add Rule</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=pricingrule/index#list'); ?>" class="tab-link" data-target="list"><i class="fi fi-sr-settings-sliders" aria-hidden="true"></i>View Rules</a>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdministrator || $isBookingOfficer): ?>
+                    <li class="accordion-item <?php echo $eventTypeExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $eventTypeExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-calendar-star nav-icon" aria-hidden="true"></i>Event Types</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=eventtype/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-plus" aria-hidden="true"></i>Add Event Type</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=eventtype/index#list'); ?>" class="tab-link" data-target="list"><i class="fi fi-sr-list" aria-hidden="true"></i>View Event Types</a>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($canViewStaffArea): ?>
+                    <li class="accordion-item <?php echo $bookingExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $bookingExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-calendar-clock nav-icon" aria-hidden="true"></i>Bookings</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=booking/index'); ?>" class="tab-link"><i class="fi fi-sr-calendar-check" aria-hidden="true"></i>All Bookings</a>
+                        </div>
+                    </li>
+                    <?php
+                    $reportsExpanded = str_contains(current_page_attr('report/index'), 'page');
+                    ?>
+                    <li class="accordion-item <?php echo $reportsExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $reportsExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-chart-histogram nav-icon" aria-hidden="true"></i>Reports</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <?php if (in_array($role, [ROLE_ADMINISTRATOR, ROLE_COUNCIL_MANAGEMENT], true)): ?>
+                                <a href="<?php echo e(BASE_URL . '/?r=report/index#summary'); ?>" class="tab-link" data-target="summary"><i class="fi fi-sr-chart-pie-alt" aria-hidden="true"></i>Summary</a>
+                            <?php endif; ?>
+
+                            <?php if (in_array($role, [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_COUNCIL_MANAGEMENT], true)): ?>
+                                <a href="<?php echo e(BASE_URL . '/?r=report/index#bookings'); ?>" class="tab-link" data-target="bookings"><i class="fi fi-sr-calendar" aria-hidden="true"></i>Bookings</a>
+                                <a href="<?php echo e(BASE_URL . '/?r=report/index#usage'); ?>" class="tab-link" data-target="usage"><i class="fi fi-sr-clock" aria-hidden="true"></i>Usage</a>
+                            <?php endif; ?>
+
+                            <?php if (in_array($role, [ROLE_ADMINISTRATOR, ROLE_REVENUE_OFFICER, ROLE_COUNCIL_MANAGEMENT], true)): ?>
+                                <a href="<?php echo e(BASE_URL . '/?r=report/index#payments'); ?>" class="tab-link" data-target="payments"><i class="fi fi-sr-credit-card" aria-hidden="true"></i>Payments</a>
+                                <a href="<?php echo e(BASE_URL . '/?r=report/index#revenue'); ?>" class="tab-link" data-target="revenue"><i class="fi fi-sr-coins" aria-hidden="true"></i>Revenue</a>
+                            <?php endif; ?>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if (in_array($role, [ROLE_ADMINISTRATOR, ROLE_BOOKING_OFFICER, ROLE_REVENUE_OFFICER], true)): ?>
+                    <li>
+                        <a href="<?php echo e(BASE_URL . '/?r=payment/index'); ?>"<?php echo current_page_attr('payment/index'); ?>>
+                            <i class="fi fi-sr-credit-card nav-icon" aria-hidden="true"></i>Payments
+                        </a>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($isAdministrator): ?>
+                    <li class="accordion-item <?php echo $userExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $userExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-users-alt nav-icon" aria-hidden="true"></i>User Management</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=user/index#add'); ?>" class="tab-link" data-target="add"><i class="fi fi-sr-user-add" aria-hidden="true"></i>Add User</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=user/index#staff'); ?>" class="tab-link" data-target="staff"><i class="fi fi-sr-briefcase" aria-hidden="true"></i>Staff List</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=user/index#customers'); ?>" class="tab-link" data-target="customers"><i class="fi fi-sr-user" aria-hidden="true"></i>Customers</a>
+                        </div>
+                    </li>
+                <?php endif; ?>
+
+                <?php if (!$user): ?>
+                    <li><a href="<?php echo e(BASE_URL . '/?r=auth/staffLogin'); ?>"<?php echo current_page_attr('auth/staffLogin'); ?>><i class="fi fi-sr-sign-in-alt nav-icon" aria-hidden="true"></i>Staff Login</a></li>
+                <?php endif; ?>
+            <?php else: ?>
+                <?php if ($isCustomer): ?>
+                    <li>
+                        <a href="<?php echo e(BASE_URL . '/?r=venue/customerList'); ?>"<?php echo current_page_attr('venue/customerList'); ?>>
+                            <i class="fi fi-sr-building nav-icon" aria-hidden="true"></i>Browse Venues
+                        </a>
+                    </li>
+                    <?php
+                    $myBookingsExpanded = str_contains(current_page_attr('booking/customerList'), 'page');
+                    ?>
+                    <li class="accordion-item <?php echo $myBookingsExpanded ? 'expanded' : ''; ?>">
+                        <button class="accordion-header" type="button" aria-expanded="<?php echo $myBookingsExpanded ? 'true' : 'false'; ?>">
+                            <span><i class="fi fi-sr-calendar-clock nav-icon" aria-hidden="true"></i>My Bookings</span>
+                            <span class="accordion-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="accordion-content">
+                            <a href="<?php echo e(BASE_URL . '/?r=booking/customerList#request'); ?>" class="tab-link" data-target="request"><i class="fi fi-sr-plus" aria-hidden="true"></i>Venue Booking Request</a>
+                            <a href="<?php echo e(BASE_URL . '/?r=booking/customerList#history'); ?>" class="tab-link" data-target="history"><i class="fi fi-sr-list" aria-hidden="true"></i>My Booking History</a>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="<?php echo e(BASE_URL . '/?r=auth/changePassword'); ?>"<?php echo current_page_attr('auth/changePassword'); ?>>
+                            <i class="fi fi-sr-shield-check nav-icon" aria-hidden="true"></i>Account Security
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <li><a href="<?php echo e(BASE_URL . '/?r=auth/login'); ?>"<?php echo current_page_attr('auth/login'); ?>><i class="fi fi-sr-sign-in-alt nav-icon" aria-hidden="true"></i>Log In</a></li>
+                    <li><a href="<?php echo e(BASE_URL . '/?r=auth/register'); ?>"<?php echo current_page_attr('auth/register'); ?>><i class="fi fi-sr-user-add nav-icon" aria-hidden="true"></i>Register</a></li>
+                <?php endif; ?>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</aside>
+
+<script nonce="<?php echo e(csp_nonce()); ?>">
+document.addEventListener('DOMContentLoaded', function () {
+    // Mobile Navigation Drawer Toggle
+    const mobileToggle = document.querySelector('.sidebar-mobile-toggle');
+    const navContainer = document.getElementById('sidebar-navigation');
+
+    if (mobileToggle && navContainer) {
+        mobileToggle.addEventListener('click', function () {
+            const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+            mobileToggle.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+            navContainer.classList.toggle('is-open', !isExpanded);
+        });
+    }
+
+    // Accordion Sections
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    accordionItems.forEach(function (item) {
+        const button = item.querySelector('.accordion-header');
+        if (!button) return;
+
+        button.addEventListener('click', function () {
+            const shouldExpand = !item.classList.contains('expanded');
+
+            accordionItems.forEach(function (otherItem) {
+                otherItem.classList.remove('expanded');
+                const otherButton = otherItem.querySelector('.accordion-header');
+                if (otherButton) otherButton.setAttribute('aria-expanded', 'false');
+            });
+
+            if (shouldExpand) {
+                item.classList.add('expanded');
+                button.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+
+    // Tab Switching
+    function switchTab(hash) {
+        if (!hash) return;
+
+        const currentPath = window.location.search.split('#')[0] || 'default';
+        sessionStorage.setItem('activeTab_' + currentPath, hash);
+
+        const targetId = hash.replace('#', '');
+        const sections = document.querySelectorAll('.tab-section');
+        let matched = false;
+
+        sections.forEach(function (section) {
+            const isMatch = section.id === targetId || section.dataset.tab === targetId;
+            section.classList.toggle('active', isMatch);
+            if (isMatch) matched = true;
+        });
+
+        // Only highlight sidebar links that point to THIS page's route. Several
+        // sections share generic hashes (#add, #list), so matching on the hash
+        // alone would light up links belonging to other modules.
+        const currentRoute = new URLSearchParams(window.location.search).get('r') || '';
+        document.querySelectorAll('.accordion-content a, .tab-link').forEach(function (link) {
+            const href = link.getAttribute('href') || '';
+            const linkHash = href.split('#')[1] || '';
+            let linkRoute = '';
+            try {
+                linkRoute = new URL(href, window.location.href).searchParams.get('r') || '';
+            } catch (e) {
+                linkRoute = '';
+            }
+            const sameRoute = linkRoute.toLowerCase() === currentRoute.toLowerCase();
+            link.classList.toggle('is-active-tab', sameRoute && linkHash === targetId);
+        });
+
+        if (!matched && sections.length) {
+            sections.forEach(function (section, index) {
+                section.classList.toggle('active', index === 0);
+            });
+        }
+    }
+
+    if (document.querySelector('.tab-section')) {
+        const currentPath = window.location.search.split('#')[0] || 'default';
+        const savedTab = sessionStorage.getItem('activeTab_' + currentPath);
+        switchTab(window.location.hash || savedTab || '#list');
+        window.addEventListener('hashchange', function () {
+            switchTab(window.location.hash);
+        });
+    }
+
+    // Automatic table responsive data-label assignment for mobile card transformation
+    document.querySelectorAll('.data-table').forEach(function (table) {
+        const headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+            return th.textContent.trim();
+        });
+        if (!headers.length) return;
+
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            const cells = row.querySelectorAll('td');
+            if (cells.length === 1 && cells[0].getAttribute('colspan')) {
+                return; // skip empty state row
+            }
+            cells.forEach(function (cell, idx) {
+                if (!cell.getAttribute('data-label') && headers[idx]) {
+                    cell.setAttribute('data-label', headers[idx]);
+                }
+            });
+        });
+    });
+});
+</script>

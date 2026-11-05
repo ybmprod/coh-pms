@@ -1,0 +1,185 @@
+DROP DATABASE IF EXISTS `coh_pms`;
+CREATE DATABASE IF NOT EXISTS `coh_pms` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `coh_pms`;
+
+CREATE TABLE `users` (
+    `user_id` INT NOT NULL AUTO_INCREMENT,
+    `full_name` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(100) NOT NULL,
+    `phone_number` VARCHAR(20) DEFAULT NULL,
+    `password_hash` VARCHAR(255) NOT NULL,
+    `role` ENUM('Customer','Booking Officer','Revenue Officer','Administrator','Council Management') NOT NULL DEFAULT 'Customer',
+    `account_status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_id`),
+    UNIQUE KEY `uq_users_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `password_reset_tokens` (
+    `reset_id` INT NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used_at` DATETIME DEFAULT NULL,
+    `requested_ip` VARCHAR(45) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`reset_id`),
+    UNIQUE KEY `uq_password_reset_token_hash` (`token_hash`),
+    KEY `idx_password_reset_user` (`user_id`),
+    KEY `idx_password_reset_expiry` (`expires_at`),
+    CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `venues` (
+    `venue_id` INT NOT NULL AUTO_INCREMENT,
+    `venue_name` VARCHAR(150) NOT NULL,
+    `venue_type` ENUM('Community Hall','Community Centre','Stadium','Open Space','Other') NOT NULL,
+    `location` VARCHAR(150) NOT NULL,
+    `capacity` INT NOT NULL,
+    `facilities` VARCHAR(255) DEFAULT NULL,
+    `description` TEXT DEFAULT NULL,
+    `standard_price` DECIMAL(10,2) NOT NULL,
+    `venue_status` ENUM('Available','Unavailable','Under Maintenance') NOT NULL DEFAULT 'Available',
+    `image_path` VARCHAR(255) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`venue_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `event_types` (
+    `event_type_id` INT NOT NULL AUTO_INCREMENT,
+    `event_name` VARCHAR(100) NOT NULL,
+    `charge_type` ENUM('Fixed Amount','Percentage') NOT NULL DEFAULT 'Fixed Amount',
+    `charge_value` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `description` VARCHAR(255) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`event_type_id`),
+    UNIQUE KEY `uq_event_types_name` (`event_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `event_type_venue_types` (
+    `event_type_id` INT NOT NULL,
+    `venue_type` ENUM('Community Hall','Community Centre','Stadium','Open Space','Other') NOT NULL,
+    PRIMARY KEY (`event_type_id`, `venue_type`),
+    KEY `idx_event_type_venue_type` (`venue_type`),
+    CONSTRAINT `fk_event_type_venue_types_event_type` FOREIGN KEY (`event_type_id`) REFERENCES `event_types` (`event_type_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pricing_rules` (
+    `pricing_rule_id` INT NOT NULL AUTO_INCREMENT,
+    `rule_name` VARCHAR(100) NOT NULL,
+    `venue_type` ENUM('All','Community Hall','Community Centre','Stadium','Open Space','Other') NOT NULL DEFAULT 'All',
+    `rule_type` ENUM('Weekday Discount','Weekend Surcharge','Off-Peak Discount','Long Booking Discount','Peak Demand Surcharge') NOT NULL,
+    `adjustment_type` ENUM('Percentage','Fixed Amount') NOT NULL DEFAULT 'Percentage',
+    `adjustment_value` DECIMAL(10,2) NOT NULL,
+    `days_of_week` VARCHAR(30) DEFAULT NULL,
+    `min_hours` DECIMAL(4,1) DEFAULT NULL,
+    `start_date` DATE DEFAULT NULL,
+    `end_date` DATE DEFAULT NULL,
+    `priority` INT NOT NULL DEFAULT 1,
+    `rule_status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`pricing_rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `bookings` (
+    `booking_id` INT NOT NULL AUTO_INCREMENT,
+    `booking_reference` VARCHAR(20) NOT NULL,
+    `customer_id` INT NOT NULL,
+    `venue_id` INT NOT NULL,
+    `event_type_id` INT DEFAULT NULL,
+    `pricing_rule_id` INT DEFAULT NULL,
+    `booking_date` DATE NOT NULL,
+    `start_time` TIME NOT NULL,
+    `end_time` TIME NOT NULL,
+    `event_type` VARCHAR(100) DEFAULT NULL,
+    `expected_attendance` INT DEFAULT NULL,
+    `standard_charge` DECIMAL(10,2) NOT NULL,
+    `event_type_charge` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `adjustment_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    `total_charge` DECIMAL(10,2) NOT NULL,
+    `booking_status` ENUM('Pending','Approved','Rejected','Cancelled','Confirmed','Completed') NOT NULL DEFAULT 'Pending',
+    `reviewed_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`booking_id`),
+    UNIQUE KEY `uq_bookings_reference` (`booking_reference`),
+    KEY `idx_bookings_venue_date` (`venue_id`, `booking_date`, `start_time`, `end_time`),
+    KEY `idx_bookings_customer` (`customer_id`),
+    KEY `idx_bookings_status` (`booking_status`),
+    KEY `idx_bookings_event_type` (`event_type_id`),
+    CONSTRAINT `fk_bookings_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_bookings_venue` FOREIGN KEY (`venue_id`) REFERENCES `venues` (`venue_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_bookings_event_type` FOREIGN KEY (`event_type_id`) REFERENCES `event_types` (`event_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_bookings_pricing_rule` FOREIGN KEY (`pricing_rule_id`) REFERENCES `pricing_rules` (`pricing_rule_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_bookings_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `payments` (
+    `payment_id` INT NOT NULL AUTO_INCREMENT,
+    `booking_id` INT NOT NULL,
+    `amount_paid` DECIMAL(10,2) NOT NULL,
+    `payment_method` ENUM('Cash','Bank Transfer','Mobile Money','Card') NOT NULL,
+    `transaction_reference` VARCHAR(100) NOT NULL,
+    `payment_date` DATETIME NOT NULL,
+    `payment_status` ENUM('Pending Verification','Verified','Rejected') NOT NULL DEFAULT 'Pending Verification',
+    `verified_by` INT DEFAULT NULL,
+    `verification_date` DATETIME DEFAULT NULL,
+    `receipt_number` VARCHAR(30) DEFAULT NULL,
+    PRIMARY KEY (`payment_id`),
+    UNIQUE KEY `uq_payments_receipt_number` (`receipt_number`),
+    KEY `idx_payments_booking` (`booking_id`),
+    KEY `idx_payments_status` (`payment_status`),
+    CONSTRAINT `fk_payments_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`booking_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_payments_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------------
+-- Row-level-security approximation views (see the matching migration).
+-- ---------------------------------------------------------------------------
+DROP VIEW IF EXISTS v_customer_receipts;
+DROP VIEW IF EXISTS v_customer_payments;
+DROP VIEW IF EXISTS v_customer_bookings;
+DROP FUNCTION IF EXISTS coh_current_customer_id;
+
+DELIMITER $$
+
+CREATE FUNCTION coh_current_customer_id()
+RETURNS INT UNSIGNED
+NOT DETERMINISTIC
+NO SQL
+RETURN COALESCE(CAST(@coh_pms_customer_id AS UNSIGNED), 0)$$
+
+DELIMITER ;
+
+CREATE VIEW v_customer_bookings AS
+SELECT b.*, v.venue_name, v.location, c.full_name AS customer_name, r.full_name AS reviewer_name, pr.rule_name,
+       (SELECT p.payment_status FROM payments p WHERE p.booking_id = b.booking_id ORDER BY p.payment_id DESC LIMIT 1) AS payment_status,
+       (SELECT p.receipt_number FROM payments p WHERE p.booking_id = b.booking_id ORDER BY p.payment_id DESC LIMIT 1) AS receipt_number
+FROM bookings b
+LEFT JOIN venues v ON v.venue_id = b.venue_id
+LEFT JOIN users c ON c.user_id = b.customer_id
+LEFT JOIN users r ON r.user_id = b.reviewed_by
+LEFT JOIN pricing_rules pr ON pr.pricing_rule_id = b.pricing_rule_id
+WHERE b.customer_id = coh_current_customer_id();
+
+CREATE VIEW v_customer_payments AS
+SELECT p.*, b.booking_reference, b.booking_date, b.start_time, b.end_time, b.event_type, b.total_charge, b.customer_id, v.venue_name
+FROM payments p
+JOIN bookings b ON b.booking_id = p.booking_id
+JOIN venues v ON v.venue_id = b.venue_id
+WHERE b.customer_id = coh_current_customer_id();
+
+CREATE VIEW v_customer_receipts AS
+SELECT p.*, b.booking_reference, b.customer_id, b.venue_id, b.booking_date, b.start_time, b.end_time, b.event_type, b.expected_attendance, b.standard_charge, b.event_type_charge, b.adjustment_amount, b.total_charge, c.full_name AS customer_name, v.venue_name, pr.rule_name, verifier.full_name AS verified_by_name
+FROM payments p
+JOIN bookings b ON b.booking_id = p.booking_id
+JOIN users c ON c.user_id = b.customer_id
+JOIN venues v ON v.venue_id = b.venue_id
+LEFT JOIN pricing_rules pr ON pr.pricing_rule_id = b.pricing_rule_id
+LEFT JOIN users verifier ON verifier.user_id = p.verified_by
+WHERE b.customer_id = coh_current_customer_id();

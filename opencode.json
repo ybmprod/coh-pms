@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "Agents.md"
+  ],
+  "command": {
+    "verify": {
+      "description": "Run the COH-PMS syntax sweep and all six regression suites.",
+      "template": "Verify the COH-PMS project in place without editing files. Run `php tests/run_all.php`. If `php` is not on PATH, use the Laragon binary documented in Agents.md. Report the exact lint count, suite results and exit status, then stop. If a gate fails, diagnose it but do not change code unless I ask."
+    }
+  }
+}

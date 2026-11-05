@@ -1,0 +1,36 @@
+-- ---------------------------------------------------------------------------
+-- COH-PMS least-privilege database account template
+--
+-- Do not run this file unchanged. Replace every CHANGE_ME value, review the
+-- host restrictions, then execute it as a MySQL administrator that holds
+-- GRANT OPTION. Some bundled Laragon root accounts intentionally omit it.
+--
+--   mysql -u root -p < database/security/least_privilege_accounts.sql.example
+--
+-- Account roles
+--   1. coh_pms_app       - full CRUD on application tables (used by PHP).
+--   2. coh_pms_customer  - SELECT on the row-filtered customer views only.
+--                          config/database.php uses this account only for
+--                          customer read models when DB_USER_CUSTOMER is set.
+--
+-- The customer account cannot read base tables directly. The views still rely
+-- on the @coh_pms_customer_id session variable, so application ownership checks
+-- remain mandatory.
+-- ---------------------------------------------------------------------------
+
+CREATE USER IF NOT EXISTS 'coh_pms_app'@'localhost' IDENTIFIED BY 'CHANGE_ME_APP_PASSWORD';
+GRANT SELECT, INSERT, UPDATE, DELETE ON coh_pms.* TO 'coh_pms_app'@'localhost';
+
+CREATE USER IF NOT EXISTS 'coh_pms_customer'@'localhost' IDENTIFIED BY 'CHANGE_ME_CUSTOMER_PASSWORD';
+GRANT SELECT ON coh_pms.v_customer_bookings TO 'coh_pms_customer'@'localhost';
+GRANT SELECT ON coh_pms.v_customer_payments TO 'coh_pms_customer'@'localhost';
+GRANT SELECT ON coh_pms.v_customer_receipts TO 'coh_pms_customer'@'localhost';
+GRANT EXECUTE ON FUNCTION coh_pms.coh_current_customer_id TO 'coh_pms_customer'@'localhost';
+
+FLUSH PRIVILEGES;
+
+-- Verify (as the customer account):
+--   SET @coh_pms_customer_id = 1;
+--   SELECT customer_id, booking_reference FROM v_customer_bookings;
+-- Every returned row must belong to customer 1. Direct SELECT on bookings,
+-- payments or users must fail with "SELECT command denied".

@@ -1,0 +1,20 @@
+Options -Indexes
+
+# Never serve dotfiles, environment files, database dumps or documentation.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+<FilesMatch "(?i)\.(env|sql|log|md|bak|ini|lock)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to application source directories using relative paths.
+    RewriteRule ^(?:config|app|database|views|docs|python|tests|storage|vendor)(?:/|$) - [F,L,NC]
+
+    # When the project root itself is the document root, forward to public/.
+    RewriteCond %{REQUEST_URI} !/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
